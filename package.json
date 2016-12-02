@@ -1,0 +1,32 @@
+{
+  "name": "conversation-login",
+  "version": "1.0.0",
+  "description": "A conversation login system that consists of multiple forms",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitemarket/conversational-login.git"
+  },
+  "keywords": [
+    "conversation",
+    "login",
+    "registration",
+    "forgot",
+    "password",
+    "form"
+  ],
+  "author": "Cas Chan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nitemarket/conversational-login/issues"
+  },
+  "homepage": "https://github.com/nitemarket/conversational-login#readme",
+  "devDependencies": {
+    "gulp": "3.9.1",
+    "gulp-rename": "1.2.2",
+    "gulp-uglify": "2.0.0"
+  }
+}
