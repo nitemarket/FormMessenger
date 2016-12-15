@@ -1,0 +1,9 @@
+.centerbox {
+    width: 500px;
+    margin: 100px auto 0px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 50px;
+}

@@ -1,0 +1,73 @@
+<html>
+<head>
+    <title>FormMessenger.js</title>
+    <link rel="stylesheet" href="css/formmessenger.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div class="centerbox">
+    <h1>FormMessenger.js</h1>
+    <div id="fm-container"></div>
+</div>
+
+<div style="display:none;">
+    <!--subscribe-->
+    <h3>Subscribe</h3>
+    <form name="subscribe" method="post" action="subscribe">
+        <input type="email" name="email" placeholder="Email Address" 
+               fm-questions="Hi there, what's your email? | Tell me your email.">
+        <input type="submit" name="submit">
+    </form>
+
+    <!--login-->
+    <h3>Sign In</h3>
+    <form name="signin" method="post" action="signin" >
+        <input type="email" name="email" placeholder="Email Address">
+        <input type="password" name="password" placeholder="Password">
+        <input type="submit" name="submit">
+    </form>
+
+    <!--register-->
+    <h3>Sign Up</h3>
+    <form name="signup" id="fm" method="post" action="signup">
+        <input type="text" name ="name" placeholder="Full Name">
+        <input type="email" name="email" placeholder="Email Address"
+               fm-questions="Hi {{previousResponse}}, what's your email?">
+        <input type="password" name="password" placeholder="Password">
+        <input type="submit" name="submit">
+    </form>
+
+    <!--forget password-->
+    <h3>Forget Password</h3>
+    <form name="forget-password" method="post" action="forget-password">
+        <input type="email" name="email" placeholder="Email Address">
+        <input type="submit" name="submit">
+    </form>
+</div>
+
+<script src="js/formmessenger.js"></script>
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+<script>
+$(document).ready(function(){
+    $('#fm').submit(function(e){
+        e.preventDefault();
+
+        var action = $(this).attr('action');
+        var fields = $(this).serializeArray();
+        
+        console.log(fields);
+        
+//        $.ajax({
+//            type: "POST",
+//            url: action,
+//            data: fields,
+//            dataType: 'json',
+//            success: function(response) {
+//                
+//            }
+//        });
+    });
+});
+</script>
+</body>
+</html>

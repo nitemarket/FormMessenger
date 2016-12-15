@@ -1,6 +1,6 @@
 {
-  "name": "conversation-login",
-  "version": "1.0.0",
+  "name": "FormMessenger",
+  "version": "0.0.1",
   "description": "A conversation login system that consists of multiple forms",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nitemarket/conversational-login.git"
+    "url": "git+https://github.com/nitemarket/FormMessenger.git"
   },
   "keywords": [
     "conversation",
@@ -16,17 +16,24 @@
     "registration",
     "forgot",
     "password",
-    "form"
+    "form",
+    "bot",
+    "messenger"
   ],
   "author": "Cas Chan",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nitemarket/conversational-login/issues"
+    "url": "https://github.com/nitemarket/FormMessenger/issues"
   },
-  "homepage": "https://github.com/nitemarket/conversational-login#readme",
+  "homepage": "https://github.com/nitemarket/FormMessenger#readme",
   "devDependencies": {
     "gulp": "3.9.1",
+    "gulp-minify-css": "1.2.4",
     "gulp-rename": "1.2.2",
     "gulp-uglify": "2.0.0"
+  },
+  "dependencies": {
+    "express": "4.14.0",
+    "morgan": "1.7.0"
   }
 }

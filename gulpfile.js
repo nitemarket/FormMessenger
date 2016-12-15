@@ -1,10 +1,24 @@
 var gulp = require('gulp');
+var minifyCss = require("gulp-minify-css");
 var uglify = require('gulp-uglify');
 var rename = require('gulp-rename');
 
-gulp.task('default', function() {
-    gulp.src('js/*.js')
+var DEST = 'dist';
+
+gulp.task('minify-js', function() {
+    gulp.src('examples/public/js/*.js')
+        .pipe(gulp.dest(DEST))
         .pipe(uglify())
-        .pipe(rename({ extname: '.min.js' }))
-        .pipe(gulp.dest('dist'))
+        .pipe(rename({ suffix: '.min' }))
+        .pipe(gulp.dest(DEST))
 });
+
+gulp.task('minify-css', function() {
+    gulp.src('examples/public/css/formmessenger.css')
+        .pipe(gulp.dest(DEST))
+        .pipe(minifyCss())
+        .pipe(rename({ suffix: '.min' }))
+        .pipe(gulp.dest(DEST))
+});
+
+gulp.task('default', ['minify-js', 'minify-css']);
