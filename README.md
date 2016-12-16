@@ -1,6 +1,8 @@
 # FormMessenger.js
 
-FormMessenger.js is a javascript plugin that transforms HTML forms into a conversational chat room. 
+FormMessenger.js is a javascript plugin that transforms HTML forms into a conversational chat room.
+
+Not require JQuery dependency. It's is plain Javascript.
 
 ### Setup
 
@@ -13,7 +15,9 @@ HTML
 
 ```html
 <div id="fm-container"></div>
-<form name="signup" id="fm" method="post" action="signup">
+<form name="signup" id="fm-initiator" method="post" action="signup">
+    <input type="hidden" name="secret" value="silent">
+    <input type="text" name="why" value="secret" fm-disabled>
 	<input type="text" name ="name" placeholder="Full Name"
     	fm-questions="May I know your name?">
 	<input type="email" name="email" placeholder="Email Address"
@@ -23,16 +27,27 @@ HTML
 	<input type="submit" name="submit">
 </form>
 ```
-The plugin is automatically initiated by assigning ID `#fm` to a HTML form. 
+The plugin is automatically initiated by assigning ID `#fm-initiator` to a HTML form. 
 
 The generated chat room will be appended in `<body>` if ID `#fm-container` is not assigned.
 
 HTML tags, attribules, id features:
+- `#fm-initiator` : The form ID to initiate the the transformation 
 - `#fm-container` : The container of the created chat room
-- `#fm` : The form ID to initiate the the transformation 
 - `fm-disabled` : To be excluded from the questions
 - `fm-questions` : Questions that will be asked for the input
 - `input/button[type=submit]` : Input / button is needed to submit the form
+
+Javascript initialization
+
+```javascript
+window.FormMessenger = new FormMessenger({
+    formEl: document.getElementById("fm-initiator"),
+    containerEl: document.getElementById("fm-container")
+});
+```
+Object key `formEl` must be provided to call the bot out.
+
 
 ### Options / configurations:
 

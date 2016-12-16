@@ -446,7 +446,7 @@
     }
     
     window.addEventListener("load", function() {
-        var formEl = document.querySelector("#fm");
+        var formEl = document.querySelector("#fm-initiator");
         var containerEl = document.querySelector("#fm-container");
         if(formEl) {
             window.FormMessenger = new FormMessenger({

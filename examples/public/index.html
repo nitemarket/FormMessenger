@@ -29,7 +29,9 @@
 
     <!--register-->
     <h3>Sign Up</h3>
-    <form name="signup" id="fm" method="post" action="signup">
+    <form name="signup" id="fm-initiator" method="post" action="signup">
+        <input type="hidden" name="secret" value="silent">
+        <input type="text" name="why" value="secret" fm-disabled>
         <input type="text" name ="name" placeholder="Full Name">
         <input type="email" name="email" placeholder="Email Address"
                fm-questions="Hi {{previousResponse}}, what's your email?">
