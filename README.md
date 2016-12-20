@@ -6,7 +6,7 @@ Not require JQuery dependency. It's is plain Javascript.
 
 ### Setup
 
-HTML 
+#### HTML 
 
 ```html
 <link rel="stylesheet" href="css/formmessenger.min.css">
@@ -27,31 +27,36 @@ HTML
 	<input type="submit" name="submit">
 </form>
 ```
-The plugin is automatically initiated by assigning ID `#fm-initiator` to a HTML form. 
+Plugin is automatically initiated by assigning id `#fm-initiator` to a HTML form.
 
-The generated chat room will be appended in `<body>` if ID `#fm-container` is not assigned.
+#### Javascript
 
-HTML tags, attribules, id features:
-- `#fm-initiator` : The form ID to initiate the the transformation 
+```javascript
+window.FormMessenger = new FormMessenger({
+    formEl: document.getElementById("fm-initiator"),
+    containerEl: document.getElementById("fm-container"),
+});
+```
+Plugin can be manually initiated by providing a DOM element as an option `formEl`.
+
+#### Tags
+
+HTML tags, attribules, id:
+- `#fm-initiator` : The form id to initiate the the transformation 
 - `#fm-container` : The container of the created chat room
 - `fm-disabled` : To be excluded from the questions
 - `fm-questions` : Questions that will be asked for the input
 - `input/button[type=submit]` : Input / button is needed to submit the form
 
-Javascript initialization
-
-```javascript
-window.FormMessenger = new FormMessenger({
-    formEl: document.getElementById("fm-initiator"),
-    containerEl: document.getElementById("fm-container")
-});
-```
 Object key `formEl` must be provided to call the bot out.
+
+The generated chat room will be appended in `<body>` if id `#fm-container` is not assigned.
 
 
 ### Options / configurations:
 
 - `previousResponsePattern` : Pattern of previous response to show in next question
+- `formCompleteCallback` : Function can be defined to overwrite the process of form submission
 - `chatListClass` : Class to be inserted into chat list div
 - `chatElementClass` : Class to be inserted into chat response div
 - `inputContainerClass` : Class to be inserted into user input container div
@@ -60,7 +65,7 @@ Object key `formEl` must be provided to call the bot out.
 
 ### Future improvements
 
-- Handle tag group
+- Add more HTML input type. Eg. select, file
 - Add validation to each question
 - Communication with JQuery Ajax Result
 - Continuation chat from the next form

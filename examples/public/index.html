@@ -7,7 +7,7 @@
 <body>
 <div class="centerbox">
     <h1>FormMessenger.js</h1>
-    <div id="fm-container"></div>
+    <div id="container"></div>
 </div>
 
 <div style="display:none;">
@@ -29,12 +29,21 @@
 
     <!--register-->
     <h3>Sign Up</h3>
-    <form name="signup" id="fm-initiator" method="post" action="signup">
+    <form name="signup" id="initiator" method="post" action="signup">
         <input type="hidden" name="secret" value="silent">
         <input type="text" name="why" value="secret" fm-disabled>
-        <input type="text" name ="name" placeholder="Full Name">
+        <input type="text" name ="name" placeholder="Full Name" value="Cas Chan">
+        <input type="radio" name ="gender" value="Male" 
+               fm-questions="Hi {{previousResponse}}. Let me know your gender!">
+        <input type="radio" name ="gender" value="Female">
+        <input type="radio" name ="gender" value="Unknown">
+        <input type="checkbox" name ="interest" value="Coding" 
+               fm-questions="What do you do in free time?">
+        <input type="checkbox" name ="interest" value="Playing games">
+        <input type="checkbox" name ="interest" value="Sleeping">
+        <input type="checkbox" name ="interest" value="Traveling">
         <input type="email" name="email" placeholder="Email Address"
-               fm-questions="Hi {{previousResponse}}, what's your email?">
+               fm-questions="What's your email?">
         <input type="password" name="password" placeholder="Password">
         <input type="submit" name="submit">
     </form>
@@ -51,7 +60,12 @@
 <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
 <script>
 $(document).ready(function(){
-    $('#fm').submit(function(e){
+    window.FormMessenger = new FormMessenger({
+    formEl: document.getElementById("initiator"),
+    containerEl: document.getElementById("container"),
+});
+    
+    $('#fm-initiator').on("submit", function(e){
         e.preventDefault();
 
         var action = $(this).attr('action');
