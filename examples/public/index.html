@@ -7,7 +7,7 @@
 <body>
 <div class="centerbox">
     <h1>FormMessenger.js</h1>
-    <div id="container"></div>
+    <div id="fm-container"></div>
 </div>
 
 <div style="display:none;">
@@ -29,7 +29,7 @@
 
     <!--register-->
     <h3>Sign Up</h3>
-    <form name="signup" id="initiator" method="post" action="signup">
+    <form name="signup" id="fm-initiator" method="post" action="signup">
         <input type="hidden" name="secret" value="silent">
         <input type="text" name="why" value="secret" fm-disabled>
         <input type="text" name ="name" placeholder="Full Name" value="Cas Chan">
@@ -59,12 +59,7 @@
 <script src="js/formmessenger.js"></script>
 <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
 <script>
-$(document).ready(function(){
-    window.FormMessenger = new FormMessenger({
-    formEl: document.getElementById("initiator"),
-    containerEl: document.getElementById("container"),
-});
-    
+$(document).ready(function(){    
     $('#fm-initiator').on("submit", function(e){
         e.preventDefault();
 
