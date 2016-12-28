@@ -3,7 +3,8 @@
  * 
  */
 
-(function(){
+var fm;
+(function(fm){
     "use strict";
     
     var defaultOptions = {
@@ -15,27 +16,27 @@
         inputBoxClass: "",
         inputButtonClass: "",
         
-        previousResponsePattern: "{{previousResponse}}"
+        previousResponsePattern: "{{previousResponse}}",
+        
+        formCompleteCallback: null,
     }
     
     var fmCustomEvent = {
         userInputSubmit: "fm-user-input-submit",
-        userInputKeyChange: "fm-user-input-key-change",
         userInputUpdate: "fm-user-input-update",
-        
+        userInputKeyChange: "fm-user-input-key-change",
+        onBubbleClick: "fm-on-bubble-click",
         flowUpdate: "fm-flow-update",
     };
     
+    
     // #####
-    // ##### Tag
+    // ##### TagBase
     // #####
-    var Tag = function(element) {
-        var self = this;
-        this.element = element;
-    }
+    var TagBase = function(element) {}
     
     //check tag
-    Tag.isTagValid = function(element) {
+    TagBase.isTagValid = function(element) {
         if(element.hasAttribute("fm-disabled")){
             return false;
         }
@@ -52,25 +53,29 @@
     }
 
     //check if tag group
-    Tag.isTagGroup = function(element) {
+    TagBase.isTagGroup = function(element) {
         if(["radio", "checkbox"].indexOf(element.getAttribute("type")) >= 0) {
             return true;
         }
         return false;
     }
     
-    Tag.prototype.getQuestion = function() {
-        if(!this.questions) {
-            this.questions = [];
-            if(this.element.getAttribute("fm-questions")){
-                this.questions = this.element.getAttribute("fm-questions").split("|");
-            }
-            if(this.questions.length <= 0) {
-                this.questions.push("Please provide us your " + this.element.getAttribute("name"));
-            }
-        }
-        return this.questions[Math.floor(Math.random() * this.questions.length)].trim();
+    
+    // #####
+    // ##### Tag
+    // #####
+    var Tag = function(element) {
+        var self = this;
+        TagBase.call(this);
+        
+        this.element = element;
     }
+    
+    // inherit parent
+    Tag.prototype = Object.create(TagBase.prototype);
+
+    // correct the constructor pointer
+    Tag.prototype.constructor = Tag;
     
     Tag.prototype.setInputValue = function(value) {
         this.element.value = value;
@@ -87,18 +92,99 @@
         return this.element.getAttribute("placeholder");
     }
     
+    Tag.prototype.getBubbles = function() {
+        var bubbles = [];
+        if(this.element.value){
+            bubbles.push({
+                value: this.element.value,
+                label: this.element.value,
+            });
+        }
+        return bubbles;
+    }
+    
+    Tag.prototype.getQuestion = function() {
+        if(!this.questions || this.questions.length <= 0) {
+            this.questions = [];
+            if(this.element && this.element.getAttribute("fm-questions")){
+                this.questions = this.element.getAttribute("fm-questions").split("|");
+            }
+            if(this.questions.length <= 0) {
+                this.questions.push("Please provide us your " + this.element.getAttribute("name"));
+            }
+        }
+        return this.questions[Math.floor(Math.random() * this.questions.length)].trim();
+    }
+    
     
     // #####
     // ##### Tag Group (radio & checkbox)
     // #####
-    var TagGroup = function(attrName) {
+    var TagGroup = function(attrName, type) {
         var self = this;
+        TagBase.call(this);
+        
         this.attrName = attrName;
+        this.type = type;
         this.elements = [];
     }
     
+    // inherit parent
+    TagGroup.prototype = Object.create(TagBase.prototype);
+
+    // correct the constructor pointer
+    TagGroup.prototype.constructor = TagGroup;
+    
     TagGroup.prototype.addElement = function(element) {
         this.elements.push(element);
+    }
+    
+    TagGroup.prototype.setInputValue = function(value, isChecked) {
+        this.elements.forEach(function(elem) {
+            if(elem.getAttribute("value") == value) {
+                elem.checked = isChecked;
+            }
+        });
+    }
+    
+    TagGroup.prototype.getQuestion = function() {
+        var self = this;
+        if(!this.questions || this.questions.length <= 0) {
+            this.questions = [];
+            this.elements.some(function(elem) {
+                var question = elem.getAttribute("fm-questions");
+                if(question) {
+                    self.questions = question.split("|");
+                    return true;
+                }
+            });
+            if(this.questions.length <= 0) {
+                this.questions.push("Please provide us your " + this.attrName);
+            }
+        }
+        return this.questions[Math.floor(Math.random() * this.questions.length)].trim();
+    }
+    
+    TagGroup.prototype.getBubbles = function() {
+        var bubbles = [];
+        this.elements.forEach(function(elem) {
+            bubbles.push({
+                value: elem.value,
+                label: elem.getAttribute("fm-label") || elem.value,
+            });
+        });
+        return bubbles;
+    }
+    
+    TagGroup.prototype.getCheckedValuesForMsg = function() {
+        var values = [];
+        this.elements.forEach(function(elem) {
+            if(elem.checked) {
+                var label = elem.getAttribute("fm-label") || elem.value;
+                values.push(label);
+            }
+        });
+        return values;
     }
     
     
@@ -115,8 +201,8 @@
         this.userInputSubmitCallback = this.userInputSubmit.bind(this);
         document.addEventListener(fmCustomEvent.userInputSubmit, this.userInputSubmitCallback, false);
         
-        this.userInputKeyChangeCallback = this.userInputKeyChange.bind(this);
-        document.addEventListener(fmCustomEvent.userInputKeyChange, this.userInputKeyChangeCallback, false);
+        this.onBubbleClickCallback = this.onBubbleClick.bind(this);
+        document.addEventListener(fmCustomEvent.onBubbleClick, this.onBubbleClickCallback, false);
         
         return this;
     }
@@ -156,9 +242,15 @@
     
     FlowManager.prototype.userInputSubmit = function(event) {
         var self = this;
-        var inputText = event.detail.trim();
+        
+        if(this.fmReference.isProcessing()){
+            return false;
+        }
+        this.fmReference.processing = true;
         
         if(this.currentTag instanceof Tag) {
+            var inputText = event.detail.value.trim();
+            
             //set element value
             this.currentTag.setInputValue(inputText);
             
@@ -170,20 +262,31 @@
                 }
                 inputText = newStr;
             }
-            
-            document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputUpdate, {
-                detail: inputText,
-            }));
-            
-            setTimeout(function() {
-                return self.nextStep();
-            }, 250);
+        } else if(this.currentTag instanceof TagGroup) {
+            inputText = this.currentTag.getCheckedValuesForMsg().join(", ");
         }
+        
+        document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputUpdate, {
+            detail: inputText,
+        }));
+
+        setTimeout(function() {
+            return self.nextStep();
+        }, 250);
     }
     
-    FlowManager.prototype.userInputKeyChange = function(event) {
-        if(this.currentTag instanceof TagGroup) {
-            console.log("Bubble changed");
+    FlowManager.prototype.onBubbleClick = function(event) {
+        var value = event.detail.value;
+        var isChecked = event.detail.isChecked;
+        
+        if(this.currentTag instanceof Tag) {
+            this.userInputSubmit(event);
+        } else if(this.currentTag instanceof TagGroup) {
+            this.currentTag.setInputValue(value, isChecked);
+            
+            if(this.currentTag.type == "radio") {
+                this.userInputSubmit(event);
+            }
         }
     }
     
@@ -211,16 +314,24 @@
     
     ChatList.prototype.buildUserChatElement = function(text) {
         var chatElement = document.createElement("div");
-        chatElement.className = ("fm-chat-element fm-user fm-clearfix" + defaultOptions.chatElementClass).trim();
+        chatElement.className = ("fm-chat-element fm-user fm-clearfix " + defaultOptions.chatElementClass).trim();
         chatElement.textContent = text;
         this.el.appendChild(chatElement);
+        
+        this.scrollToBottom();
     }
     
     ChatList.prototype.buildBotChatElement = function(text) {
         var chatElement = document.createElement("div");
-        chatElement.className = ("fm-chat-element fm-bot fm-clearfix" + defaultOptions.chatElementClass).trim();
+        chatElement.className = ("fm-chat-element fm-bot fm-clearfix " + defaultOptions.chatElementClass).trim();
         chatElement.textContent = text;
         this.el.appendChild(chatElement);
+        
+        this.scrollToBottom();
+    }
+    
+    ChatList.prototype.scrollToBottom = function() {
+        this.el.scrollTop = this.el.scrollHeight - this.el.clientHeight;
     }
     
     
@@ -229,12 +340,74 @@
     // #####
     var BubbleList = function(fmReference) {
         this.fmReference = fmReference;
+        this.bubbles = [];
+        this.filterableBubbles = true;
         
         this.el = document.createElement("div");
         this.el.id = "fmBubbleList";
         this.el.className = (defaultOptions.bubbleListClass).trim();
         
+        this.userInputKeyChangeCallback = this.userInputKeyChange.bind(this);
+        document.addEventListener(fmCustomEvent.userInputKeyChange, this.userInputKeyChangeCallback, false);
+        
         return this;
+    }
+    
+    BubbleList.prototype.userInputKeyChange = function(event) {
+        if(this.bubbles.length > 0 && this.filterableBubbles) {
+            var filteredBubbles = [];
+            if(event.detail){
+                this.bubbles.forEach(function(bubble) {
+                    if(event.detail && bubble.label.toLowerCase().indexOf(event.detail.toLowerCase()) !== -1){
+                        filteredBubbles.push(bubble);
+                    }
+                });
+            } else {
+                filteredBubbles = this.bubbles;
+            }
+            this.renderBubbles(filteredBubbles);
+        }
+    }
+    
+    BubbleList.prototype.prePopulateBubble = function(tag) {
+        var self = this;
+        this.bubbles = tag.getBubbles();
+        this.filterableBubbles = tag instanceof Tag ? false : true;
+        this.renderBubbles();
+    }
+    
+    BubbleList.prototype.clearBubbles = function() {
+        this.bubbles = [];
+        this.renderBubbles();
+    }
+    
+    BubbleList.prototype.renderBubbles = function(bubbles) {
+        var self = this, bubbles = bubbles || this.bubbles;
+        while (this.el.hasChildNodes()) {
+            this.el.removeChild(this.el.lastChild);
+        }
+        if(bubbles.length > 0){
+            bubbles.forEach(function(bubble) {
+                var bubbleElement = document.createElement("div");
+                bubbleElement.className = ("fm-bubble-element " + defaultOptions.bubbleElementClass).trim();
+                bubbleElement.textContent = bubble.label;
+                self.el.appendChild(bubbleElement);
+                
+                bubbleElement.addEventListener("click", function() {
+                    self.handleBubbleClick.call(this, bubble.value);
+                }, false);
+            });
+        }
+    }
+    
+    BubbleList.prototype.handleBubbleClick = function(value) {
+        this.classList.toggle("selected");
+        document.dispatchEvent(new CustomEvent(fmCustomEvent.onBubbleClick, {
+            detail: {
+                value: value,
+                isChecked: this.classList.contains("selected")
+            }
+        }));
     }
     
     
@@ -290,12 +463,11 @@
     }
     
     UserInput.prototype.onEnterOrSubmitBtn = function() {
-        var self = this;
         if(this.disabled) {
             return false;
         }
         document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputSubmit, {
-            detail: self.inputEl.value
+            detail: {value: this.inputEl.value}
         }));
     }
     
@@ -311,13 +483,8 @@
         this.inputEl.setAttribute("placeholder", placeholder);
     }
     
-    UserInput.prototype.setInputGroup = function(isTrue) {
-        if(isTrue){
-            this.inputBtnEl.style.display = 'none';
-        } else {
-            this.inputEl.focus();
-            this.inputBtnEl.style.display = null;
-        }
+    UserInput.prototype.focusInputBox = function() {
+        this.inputEl.focus();
     }
     
     UserInput.prototype.clearInput = function() {
@@ -341,7 +508,7 @@
     // #####
     var FormMessenger = function (options) {
         if (!options.formEl) {
-            throw new Error("Conversational Form error, the formEl needs to be defined.");
+            throw new Error("Conversational Form error, Invalid formEl.");
         }
         
         var self = this;
@@ -350,6 +517,7 @@
         this.containerEl = options.containerEl ? options.containerEl : document.body;
         this.tags = [];
         this.currentResponse = "";
+        this.processing = false;
         
         //build UI
         this.buildUI();
@@ -362,6 +530,10 @@
         }, 0);
     }
     
+    FormMessenger.prototype.isProcessing = function() {
+        return this.processing === true;
+    }
+    
     FormMessenger.prototype.initForm = function(formEl) {
         this.formEl = formEl;
         
@@ -369,15 +541,16 @@
         var processedTagsGroup = {};
         for(var i = 0; i < fields.length; i++) {
             var element = fields[i];
-            if(Tag.isTagValid(element)){
-                if(!Tag.isTagGroup(element)){
+            if(TagBase.isTagValid(element)){
+                if(!TagBase.isTagGroup(element)){
                     this.tags.push(new Tag(element));
                 }
                 else{
                     var attrName = element.getAttribute("name");
+                    var attrType = element.getAttribute("type");
                     if(!processedTagsGroup.hasOwnProperty(attrName)){
-                        var tagGroup = new TagGroup(attrName);
-//                        this.tags.push(tagGroup);
+                        var tagGroup = new TagGroup(attrName, attrType);
+                        this.tags.push(tagGroup);
                         processedTagsGroup[attrName] = tagGroup;
                     }
                     //add element to group
@@ -418,25 +591,40 @@
         var text = currentTag.getQuestion().split(defaultOptions.previousResponsePattern).join(this.currentResponse);
         this.chatEl.buildBotChatElement(text);
         
-        this.userInput.hideUserInput(currentTag.isInputSensitive());
-        this.userInput.setPlaceHolder(currentTag.getPlaceHolder());
-        this.userInput.setInputGroup(this.currentTag instanceof TagGroup);
+        if(currentTag instanceof Tag) {
+            this.userInput.hideUserInput(currentTag.isInputSensitive());
+            this.userInput.setPlaceHolder(currentTag.getPlaceHolder());
+            this.userInput.focusInputBox();
+        }
+        
+        //TODO propulate values
+        this.bubbleEl.prePopulateBubble(currentTag);
+        
+        if(currentTag instanceof TagGroup) {
+            this.userInput.setPlaceHolder("Search");
+        }
+        
+        this.processing = false;
     }
     
     FormMessenger.prototype.doSubmitForm = function() {
-        this.chatEl.buildBotChatElement("Sending form...");
-        this.userInput.setDisabled(true);
-        
-        //cannot use .submit();
-        var fields = [].slice.call(this.formEl.querySelectorAll("input, button"), 0);
-        if(fields.length > 0){
-            for(var i = 0; i < fields.length; i++){
-                if(fields[i].getAttribute("type") == "submit"){
-                    fields[i].click();
-                }
-            }
+        if(this.formCompleteCallback && typeof this.formCompleteCallback === "function"){
+            this.formCompleteCallback();
         } else {
-            this.formEl.submit();
+            this.chatEl.buildBotChatElement("Sending form...");
+            this.userInput.setDisabled(true);
+            
+            //cannot use .submit();
+            var fields = [].slice.call(this.formEl.querySelectorAll("input, button"), 0);
+            if(fields.length > 0){
+                for(var i = 0; i < fields.length; i++){
+                    if(fields[i].getAttribute("type") == "submit"){
+                        fields[i].click();
+                    }
+                }
+            } else {
+                this.formEl.submit();
+            }
         }
     }
     
@@ -445,15 +633,18 @@
         this.currentResponse = response;
     }
     
-    window.addEventListener("load", function() {
-        var formEl = document.querySelector("#fm-initiator");
-        var containerEl = document.querySelector("#fm-container");
-        if(formEl) {
-            window.FormMessenger = new FormMessenger({
-                formEl: formEl,
-                containerEl: containerEl,
-            });
-        }
-    });
-    
-})()
+    fm.FormMessenger = FormMessenger;
+})(fm || (fm = {}))
+
+var FormMessenger = fm.FormMessenger;
+
+window.addEventListener("load", function() {
+    var formEl = document.querySelector("#fm-initiator");
+    var containerEl = document.querySelector("#fm-container");
+    if(formEl) {
+        window.FormMessenger = new FormMessenger({
+            formEl: formEl,
+            containerEl: containerEl,
+        });
+    }
+});
