@@ -32,16 +32,17 @@
     <form name="signup" id="fm-initiator" method="post" action="signup">
         <input type="hidden" name="secret" value="silent">
         <input type="text" name="why" value="secret" fm-disabled>
-        <input type="text" name ="name" placeholder="Full Name" value="Cas Chan">
+        <input type="text" name ="name" placeholder="Full Name" value="Cas Chan" fm-label="CCB">
         <input type="radio" name ="gender" value="Male" 
                fm-questions="Hi {{previousResponse}}. Let me know your gender!">
         <input type="radio" name ="gender" value="Female">
         <input type="radio" name ="gender" value="Unknown">
-        <input type="checkbox" name ="interest" value="Coding" 
-               fm-questions="What do you do in free time?">
-        <input type="checkbox" name ="interest" value="Playing games">
-        <input type="checkbox" name ="interest" value="Sleeping">
-        <input type="checkbox" name ="interest" value="Traveling">
+        <input type="checkbox" name ="interest" value="code" 
+               fm-questions="What do you do in free time?"
+               fm-label="Coding">
+        <input type="checkbox" name ="interest" value="play-games" fm-label="Playing Games">
+        <input type="checkbox" name ="interest" value="sleep" fm-label="Sleeping">
+        <input type="checkbox" name ="interest" value="travel" fm-label="Traveling">
         <input type="email" name="email" placeholder="Email Address"
                fm-questions="What's your email?">
         <input type="password" name="password" placeholder="Password">

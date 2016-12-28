@@ -95,7 +95,10 @@ var fm;
     Tag.prototype.getBubbles = function() {
         var bubbles = [];
         if(this.element.value){
-            bubbles.push(this.element.value);
+            bubbles.push({
+                value: this.element.value,
+                label: this.element.value,
+            });
         }
         return bubbles;
     }
@@ -165,16 +168,20 @@ var fm;
     TagGroup.prototype.getBubbles = function() {
         var bubbles = [];
         this.elements.forEach(function(elem) {
-            bubbles.push(elem.value);
+            bubbles.push({
+                value: elem.value,
+                label: elem.getAttribute("fm-label") || elem.value,
+            });
         });
         return bubbles;
     }
     
-    TagGroup.prototype.getCheckedValues = function() {
+    TagGroup.prototype.getCheckedValuesForMsg = function() {
         var values = [];
         this.elements.forEach(function(elem) {
             if(elem.checked) {
-                values.push(elem.value);
+                var label = elem.getAttribute("fm-label") || elem.value;
+                values.push(label);
             }
         });
         return values;
@@ -256,7 +263,7 @@ var fm;
                 inputText = newStr;
             }
         } else if(this.currentTag instanceof TagGroup) {
-            inputText = this.currentTag.getCheckedValues().join(", ");
+            inputText = this.currentTag.getCheckedValuesForMsg().join(", ");
         }
         
         document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputUpdate, {
@@ -351,7 +358,7 @@ var fm;
             var filteredBubbles = [];
             if(event.detail){
                 this.bubbles.forEach(function(bubble) {
-                    if(event.detail && bubble.toLowerCase().indexOf(event.detail.toLowerCase()) !== -1){
+                    if(event.detail && bubble.label.toLowerCase().indexOf(event.detail.toLowerCase()) !== -1){
                         filteredBubbles.push(bubble);
                     }
                 });
@@ -380,24 +387,24 @@ var fm;
             this.el.removeChild(this.el.lastChild);
         }
         if(bubbles.length > 0){
-            bubbles.forEach(function(text) {
+            bubbles.forEach(function(bubble) {
                 var bubbleElement = document.createElement("div");
                 bubbleElement.className = ("fm-bubble-element " + defaultOptions.bubbleElementClass).trim();
-                bubbleElement.textContent = text;
+                bubbleElement.textContent = bubble.label;
                 self.el.appendChild(bubbleElement);
                 
                 bubbleElement.addEventListener("click", function() {
-                    self.handleBubbleClick.call(this, text);
+                    self.handleBubbleClick.call(this, bubble.value);
                 }, false);
             });
         }
     }
     
-    BubbleList.prototype.handleBubbleClick = function(text) {
+    BubbleList.prototype.handleBubbleClick = function(value) {
         this.classList.toggle("selected");
         document.dispatchEvent(new CustomEvent(fmCustomEvent.onBubbleClick, {
             detail: {
-                value: text,
+                value: value,
                 isChecked: this.classList.contains("selected")
             }
         }));

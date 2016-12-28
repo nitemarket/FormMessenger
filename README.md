@@ -20,6 +20,12 @@ Not require JQuery dependency. It's is plain Javascript.
     <input type="text" name="why" value="secret" fm-disabled>
 	<input type="text" name ="name" placeholder="Full Name"
     	fm-questions="May I know your name?">
+    <input type="checkbox" name ="interest" value="code" 
+        fm-questions="What do you do in free time?"
+        fm-label="Coding">
+    <input type="checkbox" name ="interest" value="play-games" fm-label="Playing Games">
+    <input type="checkbox" name ="interest" value="sleep" fm-label="Sleeping">
+    <input type="checkbox" name ="interest" value="travel" fm-label="Traveling">
 	<input type="email" name="email" placeholder="Email Address"
 		fm-questions="Hi {{previousResponse}}, what's your email?">
 	<input type="password" name="password" placeholder="Password" 
@@ -46,6 +52,7 @@ HTML tags, attribules, id:
 - `#fm-container` : The container of the created chat room
 - `fm-disabled` : To be excluded from the questions
 - `fm-questions` : Questions that will be asked for the input
+- `fm-label` : Label of multi-selection input for bubble display
 - `input/button[type=submit]` : Input / button is needed to submit the form
 
 Object key `formEl` must be provided to call the bot out.
