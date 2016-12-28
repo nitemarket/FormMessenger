@@ -19,6 +19,28 @@ var fm;
         previousResponsePattern: "{{previousResponse}}",
         
         formCompleteCallback: null,
+        
+        formValidation: {
+            'email': function(value){
+                if(!(/^\w+([\.-]?\ w+)*@\w+([\.-]?\ w+)*(\.\w{2,3})+$/.test(value))) {
+                    this.setErrorAndReply("Please provide a valid email.");
+                }
+            },
+            
+            'password': function(value){
+                // at least one number, one lowercase
+                // at least six characters
+                if(!(/(?=.*\d)(?=.*[a-z]).{6,}/.test(value))) {
+                    this.setErrorAndReply("Password must contain one number, one lowercase and at least 6 in length.");
+                }
+            },
+            'interest': function(values){
+                // at least 2 selections
+                if(values instanceof Array && values.length < 1) {
+                    this.setErrorAndReply("Please select at least one.");
+                }
+            },
+        },
     }
     
     var fmCustomEvent = {
@@ -26,6 +48,7 @@ var fm;
         userInputUpdate: "fm-user-input-update",
         userInputKeyChange: "fm-user-input-key-change",
         onBubbleClick: "fm-on-bubble-click",
+        onUserInputError: "fm-user-input-error",
         flowUpdate: "fm-flow-update",
     };
     
@@ -76,6 +99,10 @@ var fm;
 
     // correct the constructor pointer
     Tag.prototype.constructor = Tag;
+    
+    Tag.prototype.getAttrName = function() {
+        return this.element.getAttribute("name");
+    }
     
     Tag.prototype.setInputValue = function(value) {
         this.element.value = value;
@@ -135,6 +162,10 @@ var fm;
     // correct the constructor pointer
     TagGroup.prototype.constructor = TagGroup;
     
+    TagGroup.prototype.getAttrName = function() {
+        return this.attrName;
+    }
+    
     TagGroup.prototype.addElement = function(element) {
         this.elements.push(element);
     }
@@ -171,6 +202,7 @@ var fm;
             bubbles.push({
                 value: elem.value,
                 label: elem.getAttribute("fm-label") || elem.value,
+                isChecked: elem.checked
             });
         });
         return bubbles;
@@ -196,6 +228,8 @@ var fm;
         this.maxSteps = options.tags.length;
         this.tags = options.tags;
         this.fmReference = options.fmReference;
+        
+        this.repeatStep = false;
         
         //events
         this.userInputSubmitCallback = this.userInputSubmit.bind(this);
@@ -241,7 +275,8 @@ var fm;
     }
     
     FlowManager.prototype.userInputSubmit = function(event) {
-        var self = this;
+        var self = this, value, displayText;
+        this.repeatStep = false;
         
         if(this.fmReference.isProcessing()){
             return false;
@@ -249,30 +284,34 @@ var fm;
         this.fmReference.processing = true;
         
         if(this.currentTag instanceof Tag) {
-            var inputText = event.detail.value.trim();
+            value = event.detail.value;
+            displayText = value.trim();
             
             //set element value
-            this.currentTag.setInputValue(inputText);
+            this.currentTag.setInputValue(displayText);
             
             //mask value if sensitive
             if(this.currentTag.isInputSensitive()){
                 var newStr = "";
-                for (var i = 0; i < inputText.length; i++) {
+                for (var i = 0; i < displayText.length; i++) {
                     newStr += "*";
                 }
-                inputText = newStr;
+                displayText = newStr;
             }
         } else if(this.currentTag instanceof TagGroup) {
-            inputText = this.currentTag.getCheckedValuesForMsg().join(", ");
+            value = this.currentTag.getCheckedValuesForMsg();
+            displayText = value.join(", ");
         }
         
         document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputUpdate, {
-            detail: inputText,
+            detail: displayText,
         }));
-
-        setTimeout(function() {
-            return self.nextStep();
-        }, 250);
+        
+        if(this.validateInput(value) && !this.repeatStep) {
+            setTimeout(function() {
+                return self.nextStep();
+            }, 250);
+        }
     }
     
     FlowManager.prototype.onBubbleClick = function(event) {
@@ -290,6 +329,21 @@ var fm;
         }
     }
     
+    FlowManager.prototype.validateInput = function(value) {
+        var tagName = this.currentTag.getAttrName();
+        if(this.fmReference.options.formValidation.hasOwnProperty(tagName)){
+            this.fmReference.options.formValidation[tagName].call(this, value);
+        }
+        return true;
+    }
+    
+    FlowManager.prototype.setErrorAndReply = function(question) {
+        this.repeatStep = true;
+        document.dispatchEvent(new CustomEvent(fmCustomEvent.onUserInputError, {
+            detail: question,
+        }));
+    }
+    
     
     // #####
     // ##### ChatList
@@ -299,7 +353,7 @@ var fm;
         
         this.el = document.createElement("div");
         this.el.id = "fmChatList";
-        this.el.className = (defaultOptions.chatListClass).trim();
+        this.el.className = (this.fmReference.options.chatListClass).trim();
         
         this.onUserInputUpdateCallback = this.onUserInputUpdate.bind(this);
         document.addEventListener(fmCustomEvent.userInputUpdate, this.onUserInputUpdateCallback, false);
@@ -313,21 +367,25 @@ var fm;
     }
     
     ChatList.prototype.buildUserChatElement = function(text) {
-        var chatElement = document.createElement("div");
-        chatElement.className = ("fm-chat-element fm-user fm-clearfix " + defaultOptions.chatElementClass).trim();
-        chatElement.textContent = text;
-        this.el.appendChild(chatElement);
-        
-        this.scrollToBottom();
+        if(text){
+            var chatElement = document.createElement("div");
+            chatElement.className = ("fm-chat-element fm-user fm-clearfix " + this.fmReference.options.chatElementClass).trim();
+            chatElement.textContent = text;
+            this.el.appendChild(chatElement);
+
+            this.scrollToBottom();
+        }
     }
     
     ChatList.prototype.buildBotChatElement = function(text) {
-        var chatElement = document.createElement("div");
-        chatElement.className = ("fm-chat-element fm-bot fm-clearfix " + defaultOptions.chatElementClass).trim();
-        chatElement.textContent = text;
-        this.el.appendChild(chatElement);
-        
-        this.scrollToBottom();
+        if(text){
+            var chatElement = document.createElement("div");
+            chatElement.className = ("fm-chat-element fm-bot fm-clearfix " + this.fmReference.options.chatElementClass).trim();
+            chatElement.textContent = text;
+            this.el.appendChild(chatElement);
+
+            this.scrollToBottom();
+        }
     }
     
     ChatList.prototype.scrollToBottom = function() {
@@ -345,7 +403,7 @@ var fm;
         
         this.el = document.createElement("div");
         this.el.id = "fmBubbleList";
-        this.el.className = (defaultOptions.bubbleListClass).trim();
+        this.el.className = (this.fmReference.options.bubbleListClass).trim();
         
         this.userInputKeyChangeCallback = this.userInputKeyChange.bind(this);
         document.addEventListener(fmCustomEvent.userInputKeyChange, this.userInputKeyChangeCallback, false);
@@ -389,8 +447,11 @@ var fm;
         if(bubbles.length > 0){
             bubbles.forEach(function(bubble) {
                 var bubbleElement = document.createElement("div");
-                bubbleElement.className = ("fm-bubble-element " + defaultOptions.bubbleElementClass).trim();
+                bubbleElement.className = ("fm-bubble-element " + self.fmReference.options.bubbleElementClass).trim();
                 bubbleElement.textContent = bubble.label;
+                if(bubble.isChecked) {
+                    bubbleElement.className += " selected";
+                }
                 self.el.appendChild(bubbleElement);
                 
                 bubbleElement.addEventListener("click", function() {
@@ -422,18 +483,18 @@ var fm;
         //build ui
         this.el = document.createElement("div");
         this.el.id = "fmInputContainer";
-        this.el.className = (defaultOptions.inputContainerClass).trim();
+        this.el.className = (this.fmReference.options.inputContainerClass).trim();
         
         this.inputEl = document.createElement("input");
         this.inputEl.type = "text";
         this.inputEl.id = "fmInputBox";
-        this.inputEl.className = (defaultOptions.inputBoxClass).trim();
+        this.inputEl.className = (this.fmReference.options.inputBoxClass).trim();
         
         this.inputBtnEl = document.createElement("button");
         this.inputBtnEl.type = "button";
         this.inputBtnEl.id = "fmInputBtn";
         this.inputBtnEl.innerHTML = "Send";
-        this.inputBtnEl.className = (defaultOptions.inputButtonClass).trim();
+        this.inputBtnEl.className = (this.fmReference.options.inputButtonClass).trim();
         
         this.el.appendChild(this.inputEl);
         this.el.appendChild(this.inputBtnEl);
@@ -519,11 +580,17 @@ var fm;
         this.currentResponse = "";
         this.processing = false;
         
+        //disable html validation
+        this.formEl.setAttribute("novalidate", "");
+        
         //build UI
         this.buildUI();
         
         this.onFlowUpdateCallback = this.onFlowUpdate.bind(this);
         document.addEventListener(fmCustomEvent.flowUpdate, this.onFlowUpdateCallback, false);
+        
+        this.onUserInputErrorCallback = this.onUserInputError.bind(this);
+        document.addEventListener(fmCustomEvent.onUserInputError, this.onUserInputErrorCallback, false);
         
         setTimeout(function() {
             return self.initForm(options.formEl);
@@ -588,7 +655,7 @@ var fm;
     FormMessenger.prototype.onFlowUpdate = function(event) {
         var currentTag = event.detail;
         
-        var text = currentTag.getQuestion().split(defaultOptions.previousResponsePattern).join(this.currentResponse);
+        var text = currentTag.getQuestion().split(this.options.previousResponsePattern).join(this.currentResponse);
         this.chatEl.buildBotChatElement(text);
         
         if(currentTag instanceof Tag) {
@@ -631,6 +698,11 @@ var fm;
     FormMessenger.prototype.setCurrentResponse = function(response) {
         this.userInput.clearInput();
         this.currentResponse = response;
+    }
+    
+    FormMessenger.prototype.onUserInputError = function(event) {
+        this.chatEl.buildBotChatElement(event.detail);
+        this.processing = false;
     }
     
     fm.FormMessenger = FormMessenger;

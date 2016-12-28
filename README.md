@@ -69,10 +69,36 @@ The generated chat room will be appended in `<body>` if id `#fm-container` is no
 - `inputContainerClass` : Class to be inserted into user input container div
 - `inputBoxClass` : Class to be inserted into user input box
 - `inputButtonClass` : Class to be inserted into user input submit button
+- `formValidation` : Object of inputs validation function. @see custom validation section
+
+### Custom validation
+
+Option `formValidation` is an javascrip object that contains pairs of input `name` and `function`. 
+
+- For single input (type: text, password...), the input (`string`) is parsed as an argument.
+- For multiple input (type: checkbox, radio...), `array` is provided.
+
+`this.setErrorAndReply(question)` is used to repeat the question with different statement.
+
+```javascript
+formValidation: {
+    //input name : function()
+    'email': function(value){
+        if(!(/^\w+([\.-]?\ w+)*@\w+([\.-]?\ w+)*(\.\w{2,3})+$/.test(value))) {
+            this.setErrorAndReply("Please provide a valid email.");
+        }
+    },
+    'interest': function(values){
+        // at least 2 selections
+        if(values instanceof Array && values.length < 2) {
+            this.setErrorAndReply("Please select more than one.");
+        }
+    },
+},
+```
 
 ### Future improvements
 
 - Add more HTML input type. Eg. select, file
-- Add validation to each question
 - Communication with JQuery Ajax Result
 - Continuation chat from the next form
