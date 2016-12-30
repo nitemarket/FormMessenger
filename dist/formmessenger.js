@@ -1,5 +1,5 @@
 /*
- * FormMessenger v0.2.0
+ * FormMessenger v0.2.2
  * 
  */
 
@@ -281,7 +281,7 @@ var fm;
         if(this.fmReference.isProcessing()){
             return false;
         }
-        this.fmReference.processing = true;
+        this.fmReference.setProcessing(true);
         
         if(this.currentTag instanceof Tag) {
             value = event.detail.value;
@@ -488,6 +488,10 @@ var fm;
     
     BubbleList.prototype.handleFormSelectionClick = function(bubble) {
         var self = this;
+        if(this.fmReference.isProcessing()){
+            return false;
+        }
+        this.fmReference.setProcessing(true);
         
         document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputUpdate, {
             detail: bubble.label,
@@ -645,8 +649,13 @@ var fm;
         return this.processing === true;
     }
     
+    FormMessenger.prototype.setProcessing = function(isProcessing) {
+        this.processing = isProcessing;
+    }
+    
     FormMessenger.prototype.initForm = function(formEl) {
         this.formEl = formEl;
+        this.setProcessing(false);
         
         var fields = [].slice.call(this.formEl.querySelectorAll("input, button"), 0);
         var processedTagsGroup = {};
@@ -715,7 +724,7 @@ var fm;
         //TODO propulate values
         this.bubbleEl.prePopulateBubble(currentTag);
         
-        this.processing = false;
+        this.setProcessing(false);
     }
     
     FormMessenger.prototype.doSubmitForm = function() {
@@ -746,7 +755,7 @@ var fm;
     
     FormMessenger.prototype.onUserInputError = function(event) {
         this.chatEl.buildBotChatElement(event.detail, true);
-        this.processing = false;
+        this.setProcessing(false);
     }
     
     FormMessenger.prototype.setFormSelection = function(formSelection, question) {
