@@ -367,14 +367,18 @@ var fm;
     }
     
     ChatList.prototype.buildUserChatElement = function(text) {
-        if(text){
-            var chatElement = document.createElement("div");
-            chatElement.className = ("fm-chat-element fm-user fm-clearfix " + this.fmReference.options.chatElementClass).trim();
-            chatElement.textContent = text;
-            this.el.appendChild(chatElement);
-
-            this.scrollToBottom();
+        var displaytext = text || "Skip";
+        var chatElement = document.createElement("div");
+        chatElement.className = ("fm-chat-element fm-user fm-clearfix " + this.fmReference.options.chatElementClass).trim();
+        chatElement.textContent = displaytext;
+        
+        if(!text) {
+            chatElement.className += " skip";
         }
+        
+        this.el.appendChild(chatElement);
+
+        this.scrollToBottom();
     }
     
     ChatList.prototype.buildBotChatElement = function(text, isError) {
@@ -502,6 +506,7 @@ var fm;
         var self = this;
         this.fmReference = fmReference;
         this.disabled = false;
+        this.referCurrentResponse = true;
         
         //build ui
         this.el = document.createElement("div");
@@ -539,6 +544,8 @@ var fm;
         }
         if(event.keyCode == 13) {
             this.onEnterOrSubmitBtn();
+        } else if(event.keyCode == 38 && this.referCurrentResponse) {
+            this.inputEl.value = this.fmReference.currentResponse;
         } else {
             document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputKeyChange, {
                 detail: self.inputEl.value
@@ -557,6 +564,7 @@ var fm;
     
     UserInput.prototype.hideUserInput = function(isTrue) {
         if(isTrue){
+            this.referCurrentResponse = false;
             this.inputEl.setAttribute("type", "password");
         } else {
             this.inputEl.setAttribute("type", "text");
@@ -584,6 +592,15 @@ var fm;
             this.inputEl.removeAttribute("disabled");
             this.inputBtnEl.removeAttribute("disabled");
         }
+    }
+    
+    UserInput.prototype.reset = function() {
+        this.referCurrentResponse = true;
+        this.inputBtnEl.innerHTML = "Send";
+    }
+    
+    UserInput.prototype.setInputBtnLabel = function(label) {
+        this.inputBtnEl.innerHTML = label;
     }
     
     
@@ -685,18 +702,18 @@ var fm;
         var text = currentTag.getQuestion().split(this.options.previousResponsePattern).join(this.currentResponse);
         this.chatEl.buildBotChatElement(text);
         
+        this.userInput.reset();
+        
         if(currentTag instanceof Tag) {
             this.userInput.hideUserInput(currentTag.isInputSensitive());
             this.userInput.setPlaceHolder(currentTag.getPlaceHolder());
             this.userInput.focusInputBox();
+        } else if(currentTag instanceof TagGroup) {
+            this.userInput.setPlaceHolder("Search");
         }
         
         //TODO propulate values
         this.bubbleEl.prePopulateBubble(currentTag);
-        
-        if(currentTag instanceof TagGroup) {
-            this.userInput.setPlaceHolder("Search");
-        }
         
         this.processing = false;
     }

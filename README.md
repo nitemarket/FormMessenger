@@ -1,6 +1,6 @@
 # FormMessenger.js
 
-ver. 0.2.0
+ver. 0.2.1
 
 FormMessenger.js is a javascript plugin that transforms HTML forms into a conversational chat room.
 

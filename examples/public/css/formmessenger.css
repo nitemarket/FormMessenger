@@ -40,6 +40,10 @@
     background-color: #ea4335;
 }
 
+.fm-chat-element.skip {
+    text-decoration: line-through;
+}
+
 #fmBubbleList {
     margin-top: 32px;
     margin-bottom: 8px;
@@ -57,11 +61,15 @@
 }
 
 .fm-bubble-element.selected {
-    background-color: #ffffb2;
+    color: #fff;
+    border-color: #ffd000;
+    background-color: #ffd000;
 }
 
 .fm-bubble-element:hover {
-    background-color: #ffffb2;
+    color: #fff;
+    border-color: #ffd000;
+    background-color: #ffd000;
 }
 
 #fmInputContainer {
