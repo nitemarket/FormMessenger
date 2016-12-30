@@ -1,5 +1,5 @@
 /*
- * FormMessenger v0.0.1
+ * FormMessenger v0.2.0
  * 
  */
 
@@ -322,7 +322,7 @@ var fm;
             this.userInputSubmit(event);
         } else if(this.currentTag instanceof TagGroup) {
             this.currentTag.setInputValue(value, isChecked);
-            
+
             if(this.currentTag.type == "radio") {
                 this.userInputSubmit(event);
             }
@@ -377,11 +377,16 @@ var fm;
         }
     }
     
-    ChatList.prototype.buildBotChatElement = function(text) {
+    ChatList.prototype.buildBotChatElement = function(text, isError) {
         if(text){
             var chatElement = document.createElement("div");
             chatElement.className = ("fm-chat-element fm-bot fm-clearfix " + this.fmReference.options.chatElementClass).trim();
             chatElement.textContent = text;
+            
+            if(isError) {
+                chatElement.className += " error";
+            }
+            
             this.el.appendChild(chatElement);
 
             this.scrollToBottom();
@@ -454,9 +459,15 @@ var fm;
                 }
                 self.el.appendChild(bubbleElement);
                 
-                bubbleElement.addEventListener("click", function() {
-                    self.handleBubbleClick.call(this, bubble.value);
-                }, false);
+                if(bubble.isFormSelection) {
+                    bubbleElement.addEventListener("click", function() {
+                        self.handleFormSelectionClick.call(self, bubble);
+                    }, false);
+                } else {
+                    bubbleElement.addEventListener("click", function() {
+                        self.handleBubbleClick.call(this, bubble.value);
+                    }, false);
+                }
             });
         }
     }
@@ -469,6 +480,18 @@ var fm;
                 isChecked: this.classList.contains("selected")
             }
         }));
+    }
+    
+    BubbleList.prototype.handleFormSelectionClick = function(bubble) {
+        var self = this;
+        
+        document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputUpdate, {
+            detail: bubble.label,
+        }));
+        
+        setTimeout(function() {
+            self.fmReference.initForm(bubble.value);
+        }, 250);
     }
     
     
@@ -568,7 +591,7 @@ var fm;
     // ##### FormMessenger
     // #####
     var FormMessenger = function (options) {
-        if (!options.formEl) {
+        if (!options.formEl && !options.formSelection) {
             throw new Error("Conversational Form error, Invalid formEl.");
         }
         
@@ -580,9 +603,6 @@ var fm;
         this.currentResponse = "";
         this.processing = false;
         
-        //disable html validation
-        this.formEl.setAttribute("novalidate", "");
-        
         //build UI
         this.buildUI();
         
@@ -592,9 +612,16 @@ var fm;
         this.onUserInputErrorCallback = this.onUserInputError.bind(this);
         document.addEventListener(fmCustomEvent.onUserInputError, this.onUserInputErrorCallback, false);
         
-        setTimeout(function() {
-            return self.initForm(options.formEl);
-        }, 0);
+        if(this.formEl) {
+            //disable html validation
+            this.formEl.setAttribute("novalidate", "");
+            
+            setTimeout(function() {
+                return self.initForm(self.formEl);
+            }, 0);
+        } else if(options.formSelection) {
+            this.setFormSelection(options.formSelection, options.formSelectionQuestion);
+        }
     }
     
     FormMessenger.prototype.isProcessing = function() {
@@ -701,8 +728,23 @@ var fm;
     }
     
     FormMessenger.prototype.onUserInputError = function(event) {
-        this.chatEl.buildBotChatElement(event.detail);
+        this.chatEl.buildBotChatElement(event.detail, true);
         this.processing = false;
+    }
+    
+    FormMessenger.prototype.setFormSelection = function(formSelection, question) {
+        var question = question || "Which do you want to proceed?";
+        this.chatEl.buildBotChatElement(question);
+        
+        var formBubbles = [];
+        for(var label in formSelection) {
+            formBubbles.push({
+                label: label,
+                value: formSelection[label],
+                isFormSelection: true
+            });
+        }
+        this.bubbleEl.renderBubbles(formBubbles);
     }
     
     fm.FormMessenger = FormMessenger;

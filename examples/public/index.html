@@ -13,7 +13,7 @@
 <div style="display:none;">
     <!--subscribe-->
     <h3>Subscribe</h3>
-    <form name="subscribe" method="post" action="subscribe">
+    <form name="subscribe" id="subscribe" method="post" action="subscribe">
         <input type="email" name="email" placeholder="Email Address" 
                fm-questions="Hi there, what's your email? | Tell me your email.">
         <input type="submit" name="submit">
@@ -21,7 +21,7 @@
 
     <!--login-->
     <h3>Sign In</h3>
-    <form name="signin" method="post" action="signin" >
+    <form name="signin" id="signin" method="post" action="signin" >
         <input type="email" name="email" placeholder="Email Address">
         <input type="password" name="password" placeholder="Password">
         <input type="submit" name="submit">
@@ -29,7 +29,7 @@
 
     <!--register-->
     <h3>Sign Up</h3>
-    <form name="signup" id="fm-initiator" method="post" action="signup">
+    <form name="signup" id="signup" method="post" action="signup">
         <input type="hidden" name="secret" value="silent">
         <input type="text" name="why" value="secret" fm-disabled>
         <input type="text" name ="name" placeholder="Full Name" value="Cas Chan">
@@ -51,7 +51,7 @@
 
     <!--forget password-->
     <h3>Forget Password</h3>
-    <form name="forget-password" method="post" action="forget-password">
+    <form name="forget-password" id="forget-password" method="post" action="forget-password">
         <input type="email" name="email" placeholder="Email Address">
         <input type="submit" name="submit">
     </form>
@@ -60,13 +60,23 @@
 <script src="js/formmessenger.js"></script>
 <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
 <script>
-$(document).ready(function(){    
-    $('#fm-initiator').on("submit", function(e){
+$(document).ready(function(){
+    window.formMessenger = new FormMessenger({
+        formSelectionQuestion: "Hi, which section do you want to proceed?",
+        formSelection: {
+            "Sign In": document.getElementById("signin"),
+            "Sign Up": document.getElementById("signup"),
+        },
+        containerEl: document.getElementById("fm-container"),
+    });
+    
+    $('form').on("submit", function(e){
         e.preventDefault();
 
         var action = $(this).attr('action');
         var fields = $(this).serializeArray();
         
+        alert("Form submitted. Check console.");
         console.log(fields);
         
 //        $.ajax({

@@ -1,5 +1,7 @@
 # FormMessenger.js
 
+ver. 0.2.0
+
 FormMessenger.js is a javascript plugin that transforms HTML forms into a conversational chat room.
 
 Not require JQuery dependency. It's is plain Javascript.
@@ -70,8 +72,10 @@ The generated chat room will be appended in `<body>` if id `#fm-container` is no
 - `inputBoxClass` : Class to be inserted into user input box
 - `inputButtonClass` : Class to be inserted into user input submit button
 - `formValidation` : Object of inputs validation function. @see custom validation section
+- `formSelection` : A selection of forms for user to choose @see form selection section
+- `formSelectionQuestion` : Question for user to select a form
 
-### Custom validation
+#### Custom validation
 
 Option `formValidation` is an javascrip object that contains pairs of input `name` and `function`. 
 
@@ -95,6 +99,21 @@ formValidation: {
         }
     },
 },
+```
+
+#### Form selection
+
+In order to allow users quickly jump into a particular form, two options (`formSelection` and `formSelectionQuestion`) are provided.
+
+```javascript
+    {
+        formSelectionQuestion: "Hi, which section do you want to proceed?",
+        formSelection: {
+            //Bubble label : form element
+            "Sign In": document.getElementById("signin"),
+            "Sign Up": document.getElementById("signup"),
+        },
+    }
 ```
 
 ### Future improvements

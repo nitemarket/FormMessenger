@@ -26,12 +26,18 @@
 
 .fm-chat-element.fm-user {
     float: right;
-    border-color: #3dc8ff;
-    background-color: #edfbfc;
+    color: #fff;
+    border-color: #0078d7;
+    background-color: #0078d7;
 }
 
 .fm-chat-element.fm-bot {
     float: left;
+}
+
+.fm-chat-element.error {
+    color: #fff;
+    background-color: #ea4335;
 }
 
 #fmBubbleList {
