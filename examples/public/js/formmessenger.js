@@ -4,7 +4,7 @@
  */
 
 var fm;
-(function(fm){
+(function (fm) {
     "use strict";
     
     var defaultOptions = {
@@ -19,28 +19,29 @@ var fm;
         previousResponsePattern: "{{previousResponse}}",
         
         formCompleteCallback: null,
+        formSubmissionText: null,
         
         formValidation: {
-            'email': function(value){
-                if(!(/^\w+([\.-]?\ w+)*@\w+([\.-]?\ w+)*(\.\w{2,3})+$/.test(value))) {
+            'email': function (value) {
+                if (!(/^\w+([\.\-]?\ w+)*@\w+([\.\-]?\ w+)*(\.\w{2,3})+$/.test(value))) {
                     this.setErrorAndReply("Please provide a valid email.");
                 }
             },
             
-            'password': function(value){
+            'password': function (value) {
                 // at least one number, one lowercase
                 // at least six characters
-                if(!(/(?=.*\d)(?=.*[a-z]).{6,}/.test(value))) {
+                if (!(/(?=.*\d)(?=.*[a-z]).{6,}/.test(value))) {
                     this.setErrorAndReply("Password must contain one number, one lowercase and at least 6 in length.");
                 }
             },
-            'interest': function(values){
+            'interest': function (values) {
                 // at least 2 selections
-                if(values instanceof Array && values.length < 1) {
+                if (values instanceof Array && values.length < 1) {
                     this.setErrorAndReply("Please select at least one.");
                 }
-            },
-        },
+            }
+        }
     }
     
     var fmCustomEvent = {
@@ -49,7 +50,13 @@ var fm;
         userInputKeyChange: "fm-user-input-key-change",
         onBubbleClick: "fm-on-bubble-click",
         onUserInputError: "fm-user-input-error",
-        flowUpdate: "fm-flow-update",
+        flowUpdate: "fm-flow-update"
+    };
+    
+    var dictionaryText = {
+        tagNameRequest: "Please provide us your {tagName}",
+        formSelectionQuestion: "Which do you want to proceed?",
+        formYesNoQuestion: "Would you like to proceed to {label}",
     };
     
     
@@ -137,7 +144,7 @@ var fm;
                 this.questions = this.element.getAttribute("fm-questions").split("|");
             }
             if(this.questions.length <= 0) {
-                this.questions.push("Please provide us your " + this.element.getAttribute("name"));
+                this.questions.push(dictionaryText.tagNameRequest.replace("{tagName}", this.element.getAttribute("name")));
             }
         }
         return this.questions[Math.floor(Math.random() * this.questions.length)].trim();
@@ -190,7 +197,7 @@ var fm;
                 }
             });
             if(this.questions.length <= 0) {
-                this.questions.push("Please provide us your " + this.attrName);
+                this.questions.push(dictionaryText.tagNameRequest.replace("{tagName}", this.attrName));
             }
         }
         return this.questions[Math.floor(Math.random() * this.questions.length)].trim();
@@ -463,10 +470,14 @@ var fm;
                 }
                 self.el.appendChild(bubbleElement);
                 
-                if(bubble.isFormSelection) {
+                if(bubble.isFormSelection || bubble.isFormYes) {
                     bubbleElement.addEventListener("click", function() {
                         self.handleFormSelectionClick.call(self, bubble);
                     }, false);
+                } else if(bubble.isFormNo) {
+                    if(bubble.hasOwnProperty('callback') && typeof bubble.callback == "function") {
+                        bubble.calback.call(self.fmReference);
+                    }
                 } else {
                     bubbleElement.addEventListener("click", function() {
                         self.handleBubbleClick.call(this, bubble.value);
@@ -601,6 +612,7 @@ var fm;
     UserInput.prototype.reset = function() {
         this.referCurrentResponse = true;
         this.inputBtnEl.innerHTML = "Send";
+        this.setDisabled(false);
     }
     
     UserInput.prototype.setInputBtnLabel = function(label) {
@@ -729,9 +741,11 @@ var fm;
     
     FormMessenger.prototype.doSubmitForm = function() {
         if(this.formCompleteCallback && typeof this.formCompleteCallback === "function"){
-            this.formCompleteCallback();
+            this.formCompleteCallback.call(this);
         } else {
-            this.chatEl.buildBotChatElement("Sending form...");
+            if(this.options.formSubmissionText){
+                this.chatEl.buildBotChatElement(this.options.formSubmissionText);
+            }
             this.userInput.setDisabled(true);
             
             //cannot use .submit();
@@ -759,7 +773,8 @@ var fm;
     }
     
     FormMessenger.prototype.setFormSelection = function(formSelection, question) {
-        var question = question || "Which do you want to proceed?";
+        this.userInput.reset();
+        var question = question || dictionaryText.formSelectionQuestion;
         this.chatEl.buildBotChatElement(question);
         
         var formBubbles = [];
@@ -771,6 +786,28 @@ var fm;
             });
         }
         this.bubbleEl.renderBubbles(formBubbles);
+    }
+    
+    FormMessenger.prototype.setFormYesNo = function(form, question, noCallback) {
+        this.userInput.reset();
+        var question = question || dictionaryText.formYesNoQuestion.repeat("{label}", form.label);
+        this.chatEl.buildBotChatElement(question);
+        
+        var yesNoBubbles = [];
+        yesNoBubbles.push({
+            label: "Yes",
+            value: form.elem,
+            isFormYes: true
+        });
+        
+        yesNoBubbles.push({
+            label: "No",
+            value: null,
+            callback: noCallback,
+            isFormNo: true
+        });
+        
+        this.bubbleEl.renderBubbles(yesNoBubbles);
     }
     
     fm.FormMessenger = FormMessenger;

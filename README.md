@@ -103,7 +103,9 @@ formValidation: {
 
 #### Form selection
 
-In order to allow users quickly jump into a particular form, two options (`formSelection` and `formSelectionQuestion`) are provided.
+In order to allow users quickly jump into a particular form, two options (`formSelection` and `formSelectionQuestion`) are provided. Two use cases are explained below:
+
+##### Initialization of form
 
 ```javascript
     {
@@ -116,8 +118,33 @@ In order to allow users quickly jump into a particular form, two options (`formS
     }
 ```
 
+##### Method implementation
+
+```javascript
+    window.formMessenger.setFormSelection({
+        //Bubble label : form element
+        "Sign In": document.getElementById("signin"),
+        "Sign Up": document.getElementById("signup"),
+    }, 
+    "Hi, which section do you want to proceed?");
+```
+
+#### Form Yes/No
+
+Similar to form selection but a form element is provided and users are asked Yes/No if they want to proceed to that form.
+Three arguments (`form`, `question`, `noCallback`) are provided.
+
+```javascript
+    window.formMessenger.setFormSelection({
+        label: "Sign In",
+        elem: document.getElementById("signin"),
+    }, 
+    "Hi, which section do you want to proceed?",
+    function() {
+        alert("User press no. Form ends");
+    });
+```
+
 ### Future improvements
 
 - Add more HTML input type. Eg. select, file
-- Communication with JQuery Ajax Result
-- Continuation chat from the next form
