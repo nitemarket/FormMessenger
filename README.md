@@ -74,6 +74,7 @@ The generated chat room will be appended in `<body>` if id `#fm-container` is no
 - `formValidation` : Object of inputs validation function. @see custom validation section
 - `formSelection` : A selection of forms for user to choose @see form selection section
 - `formSelectionQuestion` : Question for user to select a form
+- `formSubmissionText` : Text to display when form is being submitted
 
 #### Custom validation
 
@@ -101,11 +102,13 @@ formValidation: {
 },
 ```
 
+### Method implementation
+
+A proper way to communicate with existing Bot Messenger.
+
 #### Form selection
 
 In order to allow users quickly jump into a particular form, two options (`formSelection` and `formSelectionQuestion`) are provided. Two use cases are explained below:
-
-##### Initialization of form
 
 ```javascript
     {
@@ -118,8 +121,6 @@ In order to allow users quickly jump into a particular form, two options (`formS
     }
 ```
 
-##### Method implementation
-
 ```javascript
     window.formMessenger.setFormSelection({
         //Bubble label : form element
@@ -129,7 +130,7 @@ In order to allow users quickly jump into a particular form, two options (`formS
     "Hi, which section do you want to proceed?");
 ```
 
-#### Form Yes/No
+#### Form Proceed Yes/No
 
 Similar to form selection but a form element is provided and users are asked Yes/No if they want to proceed to that form.
 Three arguments (`form`, `question`, `noCallback`) are provided.
@@ -143,6 +144,22 @@ Three arguments (`form`, `question`, `noCallback`) are provided.
     function() {
         alert("User press no. Form ends");
     });
+```
+
+#### Set Error Response
+
+Method: `setErrorResponse`
+
+```javascript
+    window.formMessenger.setErrorResponse("Error. Please try again.");
+```
+
+#### Set Info Response
+
+Method: `setInfoResponse`
+
+```javascript
+    window.formMessenger.setInfoResponse("Info. Good trial.");
 ```
 
 ### Future improvements

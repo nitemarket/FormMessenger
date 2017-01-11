@@ -57,7 +57,10 @@ var fm;
         tagNameRequest: "Please provide us your {tagName}",
         formSelectionQuestion: "Which do you want to proceed?",
         formYesNoQuestion: "Would you like to proceed to {label}",
+        notAvailableResponse: "Not available",
     };
+    
+    var inputCache = {};
     
     
     // #####
@@ -112,6 +115,14 @@ var fm;
     }
     
     Tag.prototype.setInputValue = function(value) {
+        var inputName = this.getAttrName();
+        if(!inputCache.hasOwnProperty(inputName)) {
+            inputCache[inputName] = [];
+        }
+        if(inputCache[inputName].indexOf(value) <= -1) {
+            inputCache[inputName].push(value);
+        }
+        
         this.element.value = value;
     }
     
@@ -127,13 +138,19 @@ var fm;
     }
     
     Tag.prototype.getBubbles = function() {
-        var bubbles = [];
-        if(this.element.value){
-            bubbles.push({
-                value: this.element.value,
-                label: this.element.value,
+        var bubbles = [], cacheBubbles = this.getCacheBubbles();
+        if(this.element.value && cacheBubbles.indexOf(this.element.value) <= -1) {
+            cacheBubbles.push(this.element.value);
+        }
+        if(cacheBubbles) {
+            cacheBubbles.forEach(function(elem) {
+                bubbles.push({
+                    value: elem,
+                    label: elem,
+                });
             });
         }
+        
         return bubbles;
     }
     
@@ -148,6 +165,14 @@ var fm;
             }
         }
         return this.questions[Math.floor(Math.random() * this.questions.length)].trim();
+    }
+    
+    Tag.prototype.getCacheBubbles = function() {
+        var inputName = this.getAttrName();
+        if(inputCache.hasOwnProperty(inputName)) {
+            return inputCache[inputName];
+        }
+        return [];
     }
     
     
@@ -258,6 +283,7 @@ var fm;
     
     FlowManager.prototype.start = function() {
         this.processStep();
+        return this;
     }
     
     FlowManager.prototype.nextStep = function() {
@@ -276,6 +302,7 @@ var fm;
     
     FlowManager.prototype.showStep = function() {
         var self = this;
+        
         document.dispatchEvent(new CustomEvent(fmCustomEvent.flowUpdate, {
             detail: self.currentTag,
         }));
@@ -284,7 +311,8 @@ var fm;
     FlowManager.prototype.userInputSubmit = function(event) {
         var self = this, value, displayText;
         this.repeatStep = false;
-        
+        console.log(this.tags);
+        console.log(this.step);
         if(this.fmReference.isProcessing()){
             return false;
         }
@@ -351,6 +379,15 @@ var fm;
         }));
     }
     
+    FlowManager.prototype.removeEventListener = function () {
+        console.log('remove listener');
+        document.removeEventListener(fmCustomEvent.userInputSubmit, this.userInputSubmitCallback, false);
+        this.userInputSubmitCallback = null;
+        
+        document.removeEventListener(fmCustomEvent.onBubbleClick, this.onBubbleClickCallback, false);
+        this.onBubbleClickCallback = null;
+    };
+    
     
     // #####
     // ##### ChatList
@@ -374,7 +411,7 @@ var fm;
     }
     
     ChatList.prototype.buildUserChatElement = function(text) {
-        var displaytext = text || "Skip";
+        var displaytext = text || dictionaryText.notAvailableResponse;
         var chatElement = document.createElement("div");
         chatElement.className = ("fm-chat-element fm-user fm-clearfix " + this.fmReference.options.chatElementClass).trim();
         chatElement.textContent = displaytext;
@@ -388,14 +425,16 @@ var fm;
         this.scrollToBottom();
     }
     
-    ChatList.prototype.buildBotChatElement = function(text, isError) {
+    ChatList.prototype.buildBotChatElement = function(text, type) {
         if(text){
             var chatElement = document.createElement("div");
             chatElement.className = ("fm-chat-element fm-bot fm-clearfix " + this.fmReference.options.chatElementClass).trim();
             chatElement.textContent = text;
             
-            if(isError) {
+            if(type == "error") {
                 chatElement.className += " error";
+            } else if(type == "info") {
+                chatElement.className += " info";
             }
             
             this.el.appendChild(chatElement);
@@ -415,7 +454,6 @@ var fm;
     var BubbleList = function(fmReference) {
         this.fmReference = fmReference;
         this.bubbles = [];
-        this.filterableBubbles = true;
         
         this.el = document.createElement("div");
         this.el.id = "fmBubbleList";
@@ -428,7 +466,7 @@ var fm;
     }
     
     BubbleList.prototype.userInputKeyChange = function(event) {
-        if(this.bubbles.length > 0 && this.filterableBubbles) {
+        if(this.bubbles.length > 0) {
             var filteredBubbles = [];
             if(event.detail){
                 this.bubbles.forEach(function(bubble) {
@@ -443,10 +481,13 @@ var fm;
         }
     }
     
-    BubbleList.prototype.prePopulateBubble = function(tag) {
-        var self = this;
+    BubbleList.prototype.prePopulateInputBubble = function(tag) {
         this.bubbles = tag.getBubbles();
-        this.filterableBubbles = tag instanceof Tag ? false : true;
+        this.renderBubbles();
+    }
+    
+    BubbleList.prototype.prePopulateLinkBubble = function(bubbles) {
+        this.bubbles = bubbles;
         this.renderBubbles();
     }
     
@@ -476,7 +517,9 @@ var fm;
                     }, false);
                 } else if(bubble.isFormNo) {
                     if(bubble.hasOwnProperty('callback') && typeof bubble.callback == "function") {
-                        bubble.calback.call(self.fmReference);
+                        bubbleElement.addEventListener("click", function() {
+                            self.handleFormNo.call(self, bubble);
+                        }, false);
                     }
                 } else {
                     bubbleElement.addEventListener("click", function() {
@@ -497,8 +540,7 @@ var fm;
         }));
     }
     
-    BubbleList.prototype.handleFormSelectionClick = function(bubble) {
-        var self = this;
+    BubbleList.prototype.onBubbleLinkClick = function(bubble) {
         if(this.fmReference.isProcessing()){
             return false;
         }
@@ -507,9 +549,22 @@ var fm;
         document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputUpdate, {
             detail: bubble.label,
         }));
-        
+    }
+    
+    BubbleList.prototype.handleFormSelectionClick = function(bubble) {
+        var self = this;
+        this.onBubbleLinkClick(bubble);
         setTimeout(function() {
             self.fmReference.initForm(bubble.value);
+        }, 250);
+    }
+    
+    BubbleList.prototype.handleFormNo = function(bubble) {
+        var self = this;
+        this.onBubbleLinkClick(bubble);
+        setTimeout(function() {
+            bubble.callback.call(self.fmReference);
+            self.fmReference.setProcessing(false);
         }, 250);
     }
     
@@ -613,6 +668,7 @@ var fm;
         this.referCurrentResponse = true;
         this.inputBtnEl.innerHTML = "Send";
         this.setDisabled(false);
+        this.clearInput();
     }
     
     UserInput.prototype.setInputBtnLabel = function(label) {
@@ -665,9 +721,15 @@ var fm;
         this.processing = isProcessing;
     }
     
+    FormMessenger.prototype.reset = function() {
+        this.tags = [];
+        this.currentResponse = "";
+        this.processing = false;
+    }
+    
     FormMessenger.prototype.initForm = function(formEl) {
         this.formEl = formEl;
-        this.setProcessing(false);
+        this.reset();
         
         var fields = [].slice.call(this.formEl.querySelectorAll("input, button"), 0);
         var processedTagsGroup = {};
@@ -689,6 +751,11 @@ var fm;
                     processedTagsGroup[attrName].addElement(element);
                 }
             }
+        }
+        
+        //remove existing flowManager
+        if(this.flowManager) {
+            this.flowManager.removeEventListener();
         }
         
         this.flowManager = new FlowManager({
@@ -734,7 +801,7 @@ var fm;
         }
         
         //TODO propulate values
-        this.bubbleEl.prePopulateBubble(currentTag);
+        this.bubbleEl.prePopulateInputBubble(currentTag);
         
         this.setProcessing(false);
     }
@@ -760,6 +827,8 @@ var fm;
                 this.formEl.submit();
             }
         }
+        
+        this.setProcessing(false);
     }
     
     FormMessenger.prototype.setCurrentResponse = function(response) {
@@ -768,7 +837,7 @@ var fm;
     }
     
     FormMessenger.prototype.onUserInputError = function(event) {
-        this.chatEl.buildBotChatElement(event.detail, true);
+        this.chatEl.buildBotChatElement(event.detail, "error");
         this.setProcessing(false);
     }
     
@@ -785,7 +854,7 @@ var fm;
                 isFormSelection: true
             });
         }
-        this.bubbleEl.renderBubbles(formBubbles);
+        this.bubbleEl.prePopulateLinkBubble(formBubbles);
     }
     
     FormMessenger.prototype.setFormYesNo = function(form, question, noCallback) {
@@ -807,7 +876,15 @@ var fm;
             isFormNo: true
         });
         
-        this.bubbleEl.renderBubbles(yesNoBubbles);
+        this.bubbleEl.prePopulateLinkBubble(yesNoBubbles);
+    }
+    
+    FormMessenger.prototype.setErrorResponse = function(msg) {
+        this.chatEl.buildBotChatElement(msg, "error");
+    }
+    
+    FormMessenger.prototype.setInfoResponse = function(msg) {
+        this.chatEl.buildBotChatElement(msg, "info");
     }
     
     fm.FormMessenger = FormMessenger;

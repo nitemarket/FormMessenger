@@ -11,3 +11,8 @@ h1 {
     background-color: #ffd000;
     color: #fff;
 }
+
+.centerbox a {
+    text-decoration: none;
+    color: #fff;
+}

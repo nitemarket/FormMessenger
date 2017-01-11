@@ -6,7 +6,7 @@
 </head>
 <body>
 <div class="centerbox">
-    <h1>FormMessenger.js</h1>
+    <a href="/"><h1>FormMessenger.js</h1></a>
     <div id="fm-container"></div>
 </div>
 
@@ -64,6 +64,7 @@ $(document).ready(function(){
     window.formMessenger = new FormMessenger({
         formSelectionQuestion: "Hi, which section do you want to proceed?",
         formSelection: {
+            "Subscribe": document.getElementById("subscribe"),
             "Sign In": document.getElementById("signin"),
             "Sign Up": document.getElementById("signup"),
         },
@@ -76,8 +77,18 @@ $(document).ready(function(){
         var action = $(this).attr('action');
         var fields = $(this).serializeArray();
         
-        alert("Form submitted. Check console.");
         console.log(fields);
+        
+        window.formMessenger.setErrorResponse("Login failed.")
+        window.formMessenger.setFormYesNo({
+            label: "Forget password",
+            elem: document.getElementById("forget-password")
+        }, "Do you want to reset your password?", function(){
+            this.setFormSelection({
+                "Sign In": document.getElementById("signin"),
+                "Sign Up": document.getElementById("signup"),
+            }, "Which section would you like to go?");
+        });
         
 //        $.ajax({
 //            type: "POST",

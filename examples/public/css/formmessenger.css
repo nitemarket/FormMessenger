@@ -37,7 +37,14 @@
 
 .fm-chat-element.error {
     color: #fff;
+    border-color: #ea4335;
     background-color: #ea4335;
+}
+
+.fm-chat-element.info {
+    color: #fff;
+    border-color: #34a853;
+    background-color: #34a853;
 }
 
 .fm-chat-element.skip {
