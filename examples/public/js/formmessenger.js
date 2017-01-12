@@ -1,5 +1,5 @@
 /*
- * FormMessenger v0.2.2
+ * FormMessenger v0.2.4
  * 
  */
 
@@ -60,7 +60,31 @@ var fm;
         notAvailableResponse: "Not available",
     };
     
-    var inputCache = {};
+    
+    // #####
+    // ##### GlobalBubble
+    // #####
+    
+    var GlobalBubble = function(fmReference) {
+        this.fmReference = fmReference;
+        this.inputCache = {};
+    }
+    
+    GlobalBubble.prototype.store = function(name, value) {
+        if(!this.inputCache.hasOwnProperty(name)) {
+            this.inputCache[name] = [];
+        }
+        if(this.inputCache[name].indexOf(value) <= -1) {
+            this.inputCache[name].push(value);
+        }
+    }
+    
+    GlobalBubble.prototype.retrieve = function(name) {
+        if(this.inputCache.hasOwnProperty(name)) {
+            return this.inputCache[name];
+        }
+        return [];
+    }
     
     
     // #####
@@ -115,19 +139,11 @@ var fm;
     }
     
     Tag.prototype.setInputValue = function(value) {
-        var inputName = this.getAttrName();
-        if(!inputCache.hasOwnProperty(inputName)) {
-            inputCache[inputName] = [];
-        }
-        if(inputCache[inputName].indexOf(value) <= -1) {
-            inputCache[inputName].push(value);
-        }
-        
         this.element.value = value;
     }
     
     Tag.prototype.isInputSensitive = function() {
-        if(this.element.getAttribute("type") == "password"){
+        if(this.element.getAttribute("type") == "password" || this.element.hasAttribute("fm-sensitive")){
             return true;
         }
         return false;
@@ -137,18 +153,21 @@ var fm;
         return this.element.getAttribute("placeholder");
     }
     
-    Tag.prototype.getBubbles = function() {
-        var bubbles = [], cacheBubbles = this.getCacheBubbles();
-        if(this.element.value && cacheBubbles.indexOf(this.element.value) <= -1) {
-            cacheBubbles.push(this.element.value);
-        }
-        if(cacheBubbles) {
-            cacheBubbles.forEach(function(elem) {
-                bubbles.push({
-                    value: elem,
-                    label: elem,
+    Tag.prototype.getBubbles = function(globalBubble) {
+        var bubbles = [];
+        if(!this.element.hasAttribute("fm-nobubble") && !this.isInputSensitive()) {
+            var cacheBubbles = globalBubble.retrieve(this.getAttrName());
+            if(this.element.value && cacheBubbles.indexOf(this.element.value) <= -1) {
+                cacheBubbles.push(this.element.value);
+            }
+            if(cacheBubbles) {
+                cacheBubbles.forEach(function(elem) {
+                    bubbles.push({
+                        value: elem,
+                        label: elem,
+                    });
                 });
-            });
+            }
         }
         
         return bubbles;
@@ -165,14 +184,6 @@ var fm;
             }
         }
         return this.questions[Math.floor(Math.random() * this.questions.length)].trim();
-    }
-    
-    Tag.prototype.getCacheBubbles = function() {
-        var inputName = this.getAttrName();
-        if(inputCache.hasOwnProperty(inputName)) {
-            return inputCache[inputName];
-        }
-        return [];
     }
     
     
@@ -228,7 +239,7 @@ var fm;
         return this.questions[Math.floor(Math.random() * this.questions.length)].trim();
     }
     
-    TagGroup.prototype.getBubbles = function() {
+    TagGroup.prototype.getBubbles = function(globalBubble) {
         var bubbles = [];
         this.elements.forEach(function(elem) {
             bubbles.push({
@@ -311,8 +322,7 @@ var fm;
     FlowManager.prototype.userInputSubmit = function(event) {
         var self = this, value, displayText;
         this.repeatStep = false;
-        console.log(this.tags);
-        console.log(this.step);
+        
         if(this.fmReference.isProcessing()){
             return false;
         }
@@ -332,6 +342,9 @@ var fm;
                     newStr += "*";
                 }
                 displayText = newStr;
+            } else {
+                //store globalBubble if not sensitive
+                this.fmReference.globalBubble.store(this.currentTag.getAttrName(), displayText);
             }
         } else if(this.currentTag instanceof TagGroup) {
             value = this.currentTag.getCheckedValuesForMsg();
@@ -481,8 +494,8 @@ var fm;
         }
     }
     
-    BubbleList.prototype.prePopulateInputBubble = function(tag) {
-        this.bubbles = tag.getBubbles();
+    BubbleList.prototype.prePopulateInputBubble = function(tag, globalBubble) {
+        this.bubbles = tag.getBubbles(globalBubble);
         this.renderBubbles();
     }
     
@@ -692,6 +705,8 @@ var fm;
         this.currentResponse = "";
         this.processing = false;
         
+        this.globalBubble = new GlobalBubble(this);
+        
         //build UI
         this.buildUI();
         
@@ -801,7 +816,7 @@ var fm;
         }
         
         //TODO propulate values
-        this.bubbleEl.prePopulateInputBubble(currentTag);
+        this.bubbleEl.prePopulateInputBubble(currentTag, this.globalBubble);
         
         this.setProcessing(false);
     }

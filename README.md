@@ -1,6 +1,6 @@
 # FormMessenger.js
 
-ver. 0.2.2
+ver. 0.2.4
 
 FormMessenger.js is a javascript plugin that transforms HTML forms into a conversational chat room.
 
@@ -55,6 +55,8 @@ HTML tags, attribules, id:
 - `fm-disabled` : To be excluded from the questions
 - `fm-questions` : Questions that will be asked for the input
 - `fm-label` : Label of multi-selection input for bubble display
+- `fm-sensitive` : Label of sensitive element to prevent from being displayed
+- `fm-nobubble` : Prevent bubbles from being displayed
 - `input/button[type=submit]` : Input / button is needed to submit the form
 
 Object key `formEl` must be provided to call the bot out.
