@@ -13,7 +13,7 @@
 <div style="display:none;">
     <!--subscribe-->
     <h3>Subscribe</h3>
-    <form name="subscribe" id="subscribe" method="post" action="user/subscribe">
+    <form name="subscribe" id="subscribe" method="post" action="subscribe">
         <input type="email" name="email" placeholder="Email Address" 
                fm-questions="Hi there, what's your email? | Tell me your email.">
         <input type="submit" name="submit">
@@ -21,7 +21,7 @@
 
     <!--login-->
     <h3>Sign In</h3>
-    <form name="signin" id="signin" method="post" action="user/signin" >
+    <form name="signin" id="signin" method="post" action="signin" >
         <input type="email" name="email" placeholder="Email Address">
         <input type="password" name="password" placeholder="Password">
         <input type="submit" name="submit">
@@ -29,7 +29,7 @@
 
     <!--register-->
     <h3>Sign Up</h3>
-    <form name="signup" id="signup" method="post" action="user/signup">
+    <form name="signup" id="signup" method="post" action="signup">
         <input type="hidden" name="secret" value="silent">
         <input type="text" name="why" value="secret" fm-disabled>
         <input type="text" name ="name" placeholder="Full Name" value="Cas Chan">
@@ -51,7 +51,7 @@
 
     <!--forget password-->
     <h3>Forget Password</h3>
-    <form name="forget-password" id="forget-password" method="post" action="user/forget-password">
+    <form name="forget-password" id="forget-password" method="post" action="forget-password">
         <input type="email" name="email" placeholder="Email Address">
         <input type="submit" name="submit">
     </form>
@@ -71,7 +71,7 @@ $(document).ready(function(){
         containerEl: document.getElementById("fm-container"),
     });
     
-    $('#signin').on("submit", function(e){
+    $('form').on("submit", function(e){
         e.preventDefault();
 
         var action = $(this).attr('action');
@@ -79,29 +79,26 @@ $(document).ready(function(){
         
         console.log(fields);
         
-        $.ajax({
-            type: "POST",
-            url: action,
-            data: fields,
-            dataType: 'json',
-            success: function(response) {
-                if(response.loggedin) {
-                    location.href = "user";
-                } else {
-                    window.formMessenger.setErrorResponse("Login failed.");
-                    window.formMessenger.setFormYesNo({
-                        label: "Forget password",
-                        elem: document.getElementById("forget-password")
-                    }, "Do you want to reset your password?", function(){
-                        this.setFormSelection({
-                            "Subscribe": document.getElementById("subscribe"),
-                            "Sign In": document.getElementById("signin"),
-                            "Sign Up": document.getElementById("signup"),
-                        }, "Which section would you like to go?");
-                    });
-                }
-            }
+        window.formMessenger.setErrorResponse("Login failed.")
+        window.formMessenger.setFormYesNo({
+            label: "Forget password",
+            elem: document.getElementById("forget-password")
+        }, "Do you want to reset your password?", function(){
+            this.setFormSelection({
+                "Sign In": document.getElementById("signin"),
+                "Sign Up": document.getElementById("signup"),
+            }, "Which section would you like to go?");
         });
+        
+//        $.ajax({
+//            type: "POST",
+//            url: action,
+//            data: fields,
+//            dataType: 'json',
+//            success: function(response) {
+//                
+//            }
+//        });
     });
 });
 </script>
