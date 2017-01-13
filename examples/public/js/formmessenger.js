@@ -1,5 +1,5 @@
 /*
- * FormMessenger v0.2.4
+ * FormMessenger v0.2.5
  * 
  */
 
@@ -364,15 +364,16 @@ var fm;
     
     FlowManager.prototype.onBubbleClick = function(event) {
         var value = event.detail.value;
-        var isChecked = event.detail.isChecked;
         
         if(this.currentTag instanceof Tag) {
             this.userInputSubmit(event);
         } else if(this.currentTag instanceof TagGroup) {
-            this.currentTag.setInputValue(value, isChecked);
-
             if(this.currentTag.type == "radio") {
+                //radio check cannot be dismissed
+                this.currentTag.setInputValue(value, true);
                 this.userInputSubmit(event);
+            } else {
+                this.currentTag.setInputValue(value, event.detail.isChecked);
             }
         }
     }
@@ -393,7 +394,6 @@ var fm;
     }
     
     FlowManager.prototype.removeEventListener = function () {
-        console.log('remove listener');
         document.removeEventListener(fmCustomEvent.userInputSubmit, this.userInputSubmitCallback, false);
         this.userInputSubmitCallback = null;
         
@@ -467,6 +467,7 @@ var fm;
     var BubbleList = function(fmReference) {
         this.fmReference = fmReference;
         this.bubbles = [];
+        this.toggleable = false;
         
         this.el = document.createElement("div");
         this.el.id = "fmBubbleList";
@@ -495,16 +496,22 @@ var fm;
     }
     
     BubbleList.prototype.prePopulateInputBubble = function(tag, globalBubble) {
+        this.reset();
         this.bubbles = tag.getBubbles(globalBubble);
+        if(tag.type == "checkbox") {
+            this.toggleable = true;
+        }
         this.renderBubbles();
     }
     
     BubbleList.prototype.prePopulateLinkBubble = function(bubbles) {
+        this.reset();
         this.bubbles = bubbles;
         this.renderBubbles();
     }
     
     BubbleList.prototype.clearBubbles = function() {
+        this.reset();
         this.bubbles = [];
         this.renderBubbles();
     }
@@ -522,6 +529,9 @@ var fm;
                 if(bubble.isChecked) {
                     bubbleElement.className += " selected";
                 }
+                if(self.toggleable) {
+                    bubbleElement.className += " checkbox";
+                }
                 self.el.appendChild(bubbleElement);
                 
                 if(bubble.isFormSelection || bubble.isFormYes) {
@@ -536,15 +546,23 @@ var fm;
                     }
                 } else {
                     bubbleElement.addEventListener("click", function() {
-                        self.handleBubbleClick.call(this, bubble.value);
+                        self.handleBubbleClick.call(this, bubble.value, self);
                     }, false);
                 }
             });
         }
     }
     
-    BubbleList.prototype.handleBubbleClick = function(value) {
-        this.classList.toggle("selected");
+    BubbleList.prototype.handleBubbleClick = function(value, bubbleList) {
+        if(bubbleList.toggleable){
+            this.classList.toggle("selected");
+        } else {
+            [].forEach.call(bubbleList.el.childNodes, function(el) {
+                el.classList.remove("selected");
+            });
+            this.classList.add("selected");
+        }
+        
         document.dispatchEvent(new CustomEvent(fmCustomEvent.onBubbleClick, {
             detail: {
                 value: value,
@@ -579,6 +597,10 @@ var fm;
             bubble.callback.call(self.fmReference);
             self.fmReference.setProcessing(false);
         }, 250);
+    }
+    
+    BubbleList.prototype.reset = function() {
+        this.toggleable = false;
     }
     
     
