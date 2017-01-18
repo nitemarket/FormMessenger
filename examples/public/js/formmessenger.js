@@ -18,6 +18,7 @@ var fm;
         
         previousResponsePattern: "{{previousResponse}}",
         
+        greetingText: null,
         formCompleteCallback: null,
         formSubmissionText: null,
         
@@ -62,9 +63,19 @@ var fm;
     
     
     // #####
+    // ##### Util
+    // #####
+    var Util = {
+        calculateTypingSpeed: function(text) {
+            var speedPerCharacter = 25;
+            return text.length * speedPerCharacter;
+        }
+    }
+    
+    
+    // #####
     // ##### GlobalBubble
     // #####
-    
     var GlobalBubble = function(fmReference) {
         this.fmReference = fmReference;
         this.inputCache = {};
@@ -438,20 +449,25 @@ var fm;
         this.scrollToBottom();
     }
     
-    ChatList.prototype.buildBotChatElement = function(text, type) {
+    ChatList.prototype.buildBotChatElement = function(text, type, callback) {
         if(text){
+            var self = this;
             var chatElement = document.createElement("div");
             chatElement.className = ("fm-chat-element fm-bot fm-clearfix " + this.fmReference.options.chatElementClass).trim();
-            chatElement.textContent = text;
             
-            if(type == "error") {
-                chatElement.className += " error";
-            } else if(type == "info") {
-                chatElement.className += " info";
+            if(type) {
+                chatElement.className += (" " + type);
             }
             
-            this.el.appendChild(chatElement);
+            chatElement.textContent = "...";
+            setTimeout(function() {
+                chatElement.textContent = text;
+                if(callback && typeof callback == "function") {
+                    callback.call(self.fmReference);
+                }
+            }, Util.calculateTypingSpeed(text));
 
+            this.el.appendChild(chatElement);
             this.scrollToBottom();
         }
     }
@@ -738,15 +754,37 @@ var fm;
         this.onUserInputErrorCallback = this.onUserInputError.bind(this);
         document.addEventListener(fmCustomEvent.onUserInputError, this.onUserInputErrorCallback, false);
         
-        if(this.formEl) {
-            //disable html validation
-            this.formEl.setAttribute("novalidate", "");
-            
-            setTimeout(function() {
+        var initFormCallback = function() {
+            if(this.formEl) {
+                //disable html validation
+                this.formEl.setAttribute("novalidate", "");
                 return self.initForm(self.formEl);
-            }, 0);
-        } else if(options.formSelection) {
-            this.setFormSelection(options.formSelection, options.formSelectionQuestion);
+            } else if(options.formSelection) {
+                self.setFormSelection(options.formSelection, options.formSelectionQuestion);
+            }
+        }
+        
+        var processGreetingText = function(greetingArray, i, mCallback, finalCallback) {
+            var text = greetingArray[i];
+            i++;
+            if(i < greetingArray.length) {
+                var callback = function() {
+                    processGreetingText(greetingArray, i, null, finalCallback);
+                }
+            } else {
+                callback = finalCallback;
+            }
+            self.setResponseWithClass(text, "greeting", callback);
+        }
+        
+        if(this.options.greetingText) {
+            if(Array.isArray(this.options.greetingText)) {
+                processGreetingText(this.options.greetingText, 0, null, initFormCallback);
+            } else if(typeof this.options.greetingText == "string") {
+                this.setResponseWithClass(this.options.greetingText, "greeting", initFormCallback);
+            }
+        } else {
+            setTimeout(initFormCallback, 0);
         }
     }
     
@@ -825,22 +863,22 @@ var fm;
         var currentTag = event.detail;
         
         var text = currentTag.getQuestion().split(this.options.previousResponsePattern).join(this.currentResponse);
-        this.chatEl.buildBotChatElement(text);
+        this.chatEl.buildBotChatElement(text, "", function() {
+            this.userInput.reset();
         
-        this.userInput.reset();
-        
-        if(currentTag instanceof Tag) {
-            this.userInput.hideUserInput(currentTag.isInputSensitive());
-            this.userInput.setPlaceHolder(currentTag.getPlaceHolder());
-            this.userInput.focusInputBox();
-        } else if(currentTag instanceof TagGroup) {
-            this.userInput.setPlaceHolder("Search");
-        }
-        
-        //TODO propulate values
-        this.bubbleEl.prePopulateInputBubble(currentTag, this.globalBubble);
-        
-        this.setProcessing(false);
+            if(currentTag instanceof Tag) {
+                this.userInput.hideUserInput(currentTag.isInputSensitive());
+                this.userInput.setPlaceHolder(currentTag.getPlaceHolder());
+                this.userInput.focusInputBox();
+            } else if(currentTag instanceof TagGroup) {
+                this.userInput.setPlaceHolder("Search");
+            }
+
+            //TODO propulate values
+            this.bubbleEl.prePopulateInputBubble(currentTag, this.globalBubble);
+
+            this.setProcessing(false);
+        });
     }
     
     FormMessenger.prototype.doSubmitForm = function() {
@@ -874,54 +912,59 @@ var fm;
     }
     
     FormMessenger.prototype.onUserInputError = function(event) {
-        this.chatEl.buildBotChatElement(event.detail, "error");
-        this.setProcessing(false);
+        this.chatEl.buildBotChatElement(event.detail, "error", function() {
+            this.setProcessing(false);
+        });
     }
     
     FormMessenger.prototype.setFormSelection = function(formSelection, question) {
         this.userInput.reset();
         var question = question || dictionaryText.formSelectionQuestion;
-        this.chatEl.buildBotChatElement(question);
-        
-        var formBubbles = [];
-        for(var label in formSelection) {
-            formBubbles.push({
-                label: label,
-                value: formSelection[label],
-                isFormSelection: true
-            });
-        }
-        this.bubbleEl.prePopulateLinkBubble(formBubbles);
+        this.chatEl.buildBotChatElement(question, "", function() {
+            var formBubbles = [];
+            for(var label in formSelection) {
+                formBubbles.push({
+                    label: label,
+                    value: formSelection[label],
+                    isFormSelection: true
+                });
+            }
+            this.bubbleEl.prePopulateLinkBubble(formBubbles);
+        });
     }
     
     FormMessenger.prototype.setFormYesNo = function(form, question, noCallback) {
         this.userInput.reset();
         var question = question || dictionaryText.formYesNoQuestion.repeat("{label}", form.label);
-        this.chatEl.buildBotChatElement(question);
-        
-        var yesNoBubbles = [];
-        yesNoBubbles.push({
-            label: "Yes",
-            value: form.elem,
-            isFormYes: true
+        this.chatEl.buildBotChatElement(question, "", function() {
+            var yesNoBubbles = [];
+            yesNoBubbles.push({
+                label: "Yes",
+                value: form.elem,
+                isFormYes: true
+            });
+
+            yesNoBubbles.push({
+                label: "No",
+                value: null,
+                callback: noCallback,
+                isFormNo: true
+            });
+            
+            this.bubbleEl.prePopulateLinkBubble(yesNoBubbles);
         });
-        
-        yesNoBubbles.push({
-            label: "No",
-            value: null,
-            callback: noCallback,
-            isFormNo: true
-        });
-        
-        this.bubbleEl.prePopulateLinkBubble(yesNoBubbles);
     }
     
     FormMessenger.prototype.setErrorResponse = function(msg) {
-        this.chatEl.buildBotChatElement(msg, "error");
+        this.setResponseWithClass(msg, "error");
     }
     
     FormMessenger.prototype.setInfoResponse = function(msg) {
-        this.chatEl.buildBotChatElement(msg, "info");
+        this.setResponseWithClass(msg, "info");
+    }
+    
+    FormMessenger.prototype.setResponseWithClass = function(msg, msgClass, callback) {
+        this.chatEl.buildBotChatElement(msg, msgClass, callback);
     }
     
     fm.FormMessenger = FormMessenger;
