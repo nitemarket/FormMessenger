@@ -1,5 +1,5 @@
 /*
- * FormMessenger v0.3.0
+ * FormMessenger v0.3.1
  * 
  */
 
@@ -805,7 +805,9 @@ var fm;
                 this.setResponseWithClass(this.options.greetingText, "greeting", initFormCallback);
             }
         } else {
-            setTimeout(initFormCallback, 0);
+            setTimeout(function() {
+                initFormCallback.call(this);
+            }, 0);
         }
     }
     
