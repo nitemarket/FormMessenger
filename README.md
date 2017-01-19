@@ -1,6 +1,6 @@
 # FormMessenger.js
 
-ver. 0.2.5
+ver. 0.3.0
 
 FormMessenger.js is a javascript plugin that transforms HTML forms into a conversational chat room.
 
@@ -77,6 +77,9 @@ The generated chat room will be appended in `<body>` if id `#fm-container` is no
 - `formSelection` : A selection of forms for user to choose @see form selection section
 - `formSelectionQuestion` : Question for user to select a form
 - `formSubmissionText` : Text to display when form is being submitted
+- `humanized` : To determine if bot is typing like human
+- `speedPerCharacter` : Typing speed in milliseconds if `humanized` is true
+- `greetingText` : Text to display when chat is initiated
 
 #### Custom validation
 
@@ -153,7 +156,9 @@ Three arguments (`form`, `question`, `noCallback`) are provided.
 Method: `setErrorResponse`
 
 ```javascript
-    window.formMessenger.setErrorResponse("Error. Please try again.");
+    window.formMessenger.setErrorResponse("Error. Please try again.", function() {
+        alert('What to do next?');
+    });
 ```
 
 #### Set Info Response
@@ -161,7 +166,9 @@ Method: `setErrorResponse`
 Method: `setInfoResponse`
 
 ```javascript
-    window.formMessenger.setInfoResponse("Info. Good trial.");
+    window.formMessenger.setInfoResponse("Info. Good trial.", function() {
+        alert('What to do next?');
+    });
 ```
 
 ### Future improvements

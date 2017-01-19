@@ -63,7 +63,7 @@
 $(document).ready(function(){
     window.formMessenger = new FormMessenger({
         greetingText: ["Hi. Welcome to Form Messenger!"],
-        formSelectionQuestion: "Hi, which section do you want to proceed?",
+        formSelectionQuestion: "I'm a bot. What can I help you?",
         formSelection: {
             "Subscribe": document.getElementById("subscribe"),
             "Sign In": document.getElementById("signin"),
@@ -89,17 +89,19 @@ $(document).ready(function(){
                 if(response.loggedin) {
                     location.href = "user";
                 } else {
-                    window.formMessenger.setErrorResponse("Login failed.");
-                    window.formMessenger.setFormYesNo({
-                        label: "Forget password",
-                        elem: document.getElementById("forget-password")
-                    }, "Do you want to reset your password?", function(){
-                        this.setFormSelection({
-                            "Subscribe": document.getElementById("subscribe"),
-                            "Sign In": document.getElementById("signin"),
-                            "Sign Up": document.getElementById("signup"),
-                        }, "Which section would you like to go?");
+                    window.formMessenger.setErrorResponse("Login failed.", function() {
+                        this.setFormYesNo({
+                            label: "Forget password",
+                            elem: document.getElementById("forget-password")
+                        }, "Do you want to reset your password?", function(){
+                            this.setFormSelection({
+                                "Subscribe": document.getElementById("subscribe"),
+                                "Sign In": document.getElementById("signin"),
+                                "Sign Up": document.getElementById("signup"),
+                            }, "Which section would you like to go?");
+                        });
                     });
+                    
                 }
             }
         });

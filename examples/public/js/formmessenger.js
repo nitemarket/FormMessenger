@@ -1,5 +1,5 @@
 /*
- * FormMessenger v0.2.5
+ * FormMessenger v0.3.0
  * 
  */
 
@@ -18,7 +18,10 @@ var fm;
         
         previousResponsePattern: "{{previousResponse}}",
         
+        humanized: true,
+        speedPerCharacter: 25,
         greetingText: null,
+        
         formCompleteCallback: null,
         formSubmissionText: null,
         
@@ -65,11 +68,12 @@ var fm;
     // #####
     // ##### Util
     // #####
-    var Util = {
-        calculateTypingSpeed: function(text) {
-            var speedPerCharacter = 25;
-            return text.length * speedPerCharacter;
-        }
+    var Util = function(fmReference) {
+        this.fmReference = fmReference;
+    }
+    
+    Util.prototype.calculateTypingSpeed = function(text) {
+        return text.length * this.fmReference.options.speedPerCharacter;
     }
     
     
@@ -418,6 +422,7 @@ var fm;
     // #####
     var ChatList = function(fmReference) {
         this.fmReference = fmReference;
+        this.humanized = fmReference.options.humanized;
         
         this.el = document.createElement("div");
         this.el.id = "fmChatList";
@@ -449,23 +454,39 @@ var fm;
         this.scrollToBottom();
     }
     
-    ChatList.prototype.buildBotChatElement = function(text, type, callback) {
+    ChatList.prototype.buildBotChatElement = function(text, params) {
         if(text){
-            var self = this;
+            var self = this, callback, type;
+            if(typeof arguments[1] == "function") {
+                callback = arguments[1];
+            } else {
+                type = arguments[1];
+                callback = arguments[2];
+            }
+            
             var chatElement = document.createElement("div");
             chatElement.className = ("fm-chat-element fm-bot fm-clearfix " + this.fmReference.options.chatElementClass).trim();
             
-            if(type) {
-                chatElement.className += (" " + type);
-            }
-            
-            chatElement.textContent = "...";
-            setTimeout(function() {
+            if(this.humanized) {
+                chatElement.textContent = "...";
+                setTimeout(function() {
+                    chatElement.textContent = text;
+                    if(type) {
+                        chatElement.className += (" " + type);
+                    }
+                    if(callback && typeof callback == "function") {
+                        callback.call(self.fmReference);
+                    }
+                }, this.fmReference.util.calculateTypingSpeed(text));
+            } else {
+                if(type) {
+                    chatElement.className += (" " + type);
+                }
                 chatElement.textContent = text;
                 if(callback && typeof callback == "function") {
                     callback.call(self.fmReference);
                 }
-            }, Util.calculateTypingSpeed(text));
+            }
 
             this.el.appendChild(chatElement);
             this.scrollToBottom();
@@ -719,7 +740,6 @@ var fm;
         this.referCurrentResponse = true;
         this.inputBtnEl.innerHTML = "Send";
         this.setDisabled(false);
-        this.clearInput();
     }
     
     UserInput.prototype.setInputBtnLabel = function(label) {
@@ -739,6 +759,7 @@ var fm;
         this.options = Object.assign({}, defaultOptions, options);
         this.formEl = options.formEl;
         this.containerEl = options.containerEl ? options.containerEl : document.body;
+        this.util = new Util(this);
         this.tags = [];
         this.currentResponse = "";
         this.processing = false;
@@ -863,7 +884,7 @@ var fm;
         var currentTag = event.detail;
         
         var text = currentTag.getQuestion().split(this.options.previousResponsePattern).join(this.currentResponse);
-        this.chatEl.buildBotChatElement(text, "", function() {
+        this.chatEl.buildBotChatElement(text, function() {
             this.userInput.reset();
         
             if(currentTag instanceof Tag) {
@@ -885,21 +906,25 @@ var fm;
         if(this.formCompleteCallback && typeof this.formCompleteCallback === "function"){
             this.formCompleteCallback.call(this);
         } else {
-            if(this.options.formSubmissionText){
-                this.chatEl.buildBotChatElement(this.options.formSubmissionText);
-            }
             this.userInput.setDisabled(true);
-            
-            //cannot use .submit();
-            var fields = [].slice.call(this.formEl.querySelectorAll("input, button"), 0);
-            if(fields.length > 0){
-                for(var i = 0; i < fields.length; i++){
-                    if(fields[i].getAttribute("type") == "submit"){
-                        fields[i].click();
+            var formTextCallback = function() {
+                //cannot use .submit();
+                var fields = [].slice.call(this.formEl.querySelectorAll("input, button"), 0);
+                if(fields.length > 0){
+                    for(var i = 0; i < fields.length; i++){
+                        if(fields[i].getAttribute("type") == "submit"){
+                            fields[i].click();
+                        }
                     }
+                } else {
+                    this.formEl.submit();
                 }
+            }
+            
+            if(this.options.formSubmissionText){
+                this.chatEl.buildBotChatElement(this.options.formSubmissionText, formTextCallback);
             } else {
-                this.formEl.submit();
+                formTextCallback.call(this);
             }
         }
         
@@ -920,7 +945,7 @@ var fm;
     FormMessenger.prototype.setFormSelection = function(formSelection, question) {
         this.userInput.reset();
         var question = question || dictionaryText.formSelectionQuestion;
-        this.chatEl.buildBotChatElement(question, "", function() {
+        this.chatEl.buildBotChatElement(question, function() {
             var formBubbles = [];
             for(var label in formSelection) {
                 formBubbles.push({
@@ -936,7 +961,7 @@ var fm;
     FormMessenger.prototype.setFormYesNo = function(form, question, noCallback) {
         this.userInput.reset();
         var question = question || dictionaryText.formYesNoQuestion.repeat("{label}", form.label);
-        this.chatEl.buildBotChatElement(question, "", function() {
+        this.chatEl.buildBotChatElement(question, function() {
             var yesNoBubbles = [];
             yesNoBubbles.push({
                 label: "Yes",
@@ -955,12 +980,12 @@ var fm;
         });
     }
     
-    FormMessenger.prototype.setErrorResponse = function(msg) {
-        this.setResponseWithClass(msg, "error");
+    FormMessenger.prototype.setErrorResponse = function(msg, callback) {
+        this.setResponseWithClass(msg, "error", callback);
     }
     
-    FormMessenger.prototype.setInfoResponse = function(msg) {
-        this.setResponseWithClass(msg, "info");
+    FormMessenger.prototype.setInfoResponse = function(msg, callback) {
+        this.setResponseWithClass(msg, "info", callback);
     }
     
     FormMessenger.prototype.setResponseWithClass = function(msg, msgClass, callback) {
