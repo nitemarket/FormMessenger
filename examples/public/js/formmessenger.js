@@ -1,5 +1,5 @@
 /*
- * FormMessenger v0.3.1
+ * FormMessenger v0.3.2
  * 
  */
 
@@ -31,20 +31,19 @@ var fm;
                     this.setErrorAndReply("Please provide a valid email.");
                 }
             },
-            
-            'password': function (value) {
-                // at least one number, one lowercase
-                // at least six characters
-                if (!(/(?=.*\d)(?=.*[a-z]).{6,}/.test(value))) {
-                    this.setErrorAndReply("Password must contain one number, one lowercase and at least 6 in length.");
-                }
-            },
-            'interest': function (values) {
-                // at least 2 selections
-                if (values instanceof Array && values.length < 1) {
-                    this.setErrorAndReply("Please select at least one.");
-                }
-            }
+//            'password': function (value) {
+//                // at least one number, one lowercase
+//                // at least six characters
+//                if (!(/(?=.*\d)(?=.*[a-z]).{6,}/.test(value))) {
+//                    this.setErrorAndReply("Password must contain one number, one lowercase and at least 6 in length.");
+//                }
+//            },
+//            'interest': function (values) {
+//                // at least 2 selections
+//                if (values instanceof Array && values.length < 1) {
+//                    this.setErrorAndReply("Please select at least one.");
+//                }
+//            }
         }
     }
     
