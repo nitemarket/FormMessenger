@@ -1,5 +1,5 @@
 /*
- * FormMessenger v0.3.3
+ * FormMessenger v0.3.4
  * 
  */
 
@@ -341,6 +341,7 @@ var fm;
             return false;
         }
         this.fmReference.setProcessing(true);
+        this.fmReference.bubbleEl.clearBubbles();
         
         if(this.currentTag instanceof Tag) {
             value = event.detail.value;
@@ -577,7 +578,6 @@ var fm;
                 } else if(bubble.isFormNo) {
                     if(bubble.hasOwnProperty('callback') && typeof bubble.callback == "function") {
                         bubbleElement.addEventListener("click", function() {
-                            self.clearBubbles();
                             self.handleFormNo.call(self, bubble);
                         }, false);
                     }
@@ -613,7 +613,7 @@ var fm;
             return false;
         }
         this.fmReference.setProcessing(true);
-        
+        this.clearBubbles();
         document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputUpdate, {
             detail: bubble.label,
         }));
