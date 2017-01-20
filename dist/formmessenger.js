@@ -1,5 +1,5 @@
 /*
- * FormMessenger v0.3.2
+ * FormMessenger v0.3.3
  * 
  */
 
@@ -577,6 +577,7 @@ var fm;
                 } else if(bubble.isFormNo) {
                     if(bubble.hasOwnProperty('callback') && typeof bubble.callback == "function") {
                         bubbleElement.addEventListener("click", function() {
+                            self.clearBubbles();
                             self.handleFormNo.call(self, bubble);
                         }, false);
                     }
