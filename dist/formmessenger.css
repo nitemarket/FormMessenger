@@ -1,4 +1,5 @@
 #form-messenger {
+    position: relative;
     height: 100%;
     display: block;
     padding: 24px;
@@ -7,7 +8,7 @@
 }
 
 #fmChatList {
-    height: 80%; 
+    height: 70%; 
     font-size: 18px;
     overflow-y: auto;
 }
@@ -52,13 +53,17 @@
 }
 
 #fmBubbleList {
-    margin-top: 32px;
-    margin-bottom: 8px;
+    height: 10%; 
     text-align: right;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 50px;
+    margin: 24px;
+    max-height: 35px;
 }
 
 .fm-bubble-element {
-    margin-bottom: 8px;
     margin-left: 8px;
     padding: 8px 16px;
     display: inline-block;
@@ -85,7 +90,13 @@
 }
 
 #fmInputContainer {
-    
+    height: 10%; 
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    margin: 24px;
+    max-height: 35px;
 }
 
 #fmInputBox {
