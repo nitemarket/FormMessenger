@@ -1,5 +1,5 @@
 /*
- * FormMessenger v0.3.5
+ * FormMessenger v0.3.6
  * 
  */
 
@@ -493,6 +493,14 @@ var fm;
         }
     }
     
+    ChatList.prototype.buildFormLabelElement = function(label) {
+        var chatElement = document.createElement("div");
+        chatElement.className = ("fm-form-label");
+        chatElement.textContent = label;
+        this.el.appendChild(chatElement);
+        this.scrollToBottom();
+    }
+    
     ChatList.prototype.scrollToBottom = function() {
         this.el.scrollTop = this.el.scrollHeight - this.el.clientHeight;
     }
@@ -623,7 +631,7 @@ var fm;
         var self = this;
         this.onBubbleLinkClick(bubble);
         setTimeout(function() {
-            self.fmReference.initForm(bubble.value);
+            self.fmReference.initForm(bubble.value, bubble.formLabel);
         }, 250);
     }
     
@@ -648,6 +656,7 @@ var fm;
         var self = this;
         this.fmReference = fmReference;
         this.disabled = false;
+        this.submitable = true;
         this.referCurrentResponse = true;
         
         //build ui
@@ -696,7 +705,7 @@ var fm;
     }
     
     UserInput.prototype.onEnterOrSubmitBtn = function() {
-        if(this.disabled) {
+        if(this.disabled || !this.submitable) {
             return false;
         }
         document.dispatchEvent(new CustomEvent(fmCustomEvent.userInputSubmit, {
@@ -740,6 +749,12 @@ var fm;
         this.referCurrentResponse = true;
         this.inputBtnEl.innerHTML = "Send";
         this.setDisabled(false);
+        this.setSubmitable(true);
+    }
+    
+    UserInput.prototype.setSubmitable = function(isTrue) {
+        this.setPlaceHolder("Search");
+        this.submitable = isTrue;
     }
     
     UserInput.prototype.setInputBtnLabel = function(label) {
@@ -825,9 +840,13 @@ var fm;
         this.processing = false;
     }
     
-    FormMessenger.prototype.initForm = function(formEl) {
+    FormMessenger.prototype.initForm = function(formEl, formLabel) {
         this.formEl = formEl;
         this.reset();
+        
+        if(formLabel) {
+            this.chatEl.buildFormLabelElement(formLabel);
+        }
         
         var fields = [].slice.call(this.formEl.querySelectorAll("input, button"), 0);
         var processedTagsGroup = {};
@@ -946,12 +965,14 @@ var fm;
     
     FormMessenger.prototype.setFormSelection = function(formSelection, question) {
         this.userInput.reset();
+        this.userInput.setSubmitable(false);
         var question = question || dictionaryText.formSelectionQuestion;
         this.chatEl.buildBotChatElement(question, function() {
             var formBubbles = [];
             for(var label in formSelection) {
                 formBubbles.push({
                     label: label,
+                    formLabel: label,
                     value: formSelection[label],
                     isFormSelection: true
                 });
@@ -962,17 +983,20 @@ var fm;
     
     FormMessenger.prototype.setFormYesNo = function(form, question, noCallback) {
         this.userInput.reset();
+        this.userInput.setSubmitable(false);
         var question = question || dictionaryText.formYesNoQuestion.repeat("{label}", form.label);
         this.chatEl.buildBotChatElement(question, function() {
             var yesNoBubbles = [];
             yesNoBubbles.push({
                 label: "Yes",
+                formLabel: form.label,
                 value: form.elem,
                 isFormYes: true
             });
 
             yesNoBubbles.push({
                 label: "No",
+                formLabel: form.label,
                 value: null,
                 callback: noCallback,
                 isFormNo: true

@@ -52,6 +52,17 @@
     text-decoration: line-through;
 }
 
+.fm-form-label {
+    clear: both;
+    text-align: center;
+    padding: 4px 0;
+    margin: 16px 0;
+    font-size: 13px;
+    background-color: #f1f1f1;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
 #fmBubbleList {
     height: 10%; 
     text-align: right;
